@@ -1,6 +1,8 @@
 import type { Action } from './actions';
+import { getLegalActions } from './actions';
 import type { Card, Color } from './types';
 import type { GameEvent } from './events';
+import type { GameState } from './game-state';
 
 /**
  * Card in another player's hand. Color and value are visible only when hinted (FR-19).
@@ -53,4 +55,40 @@ export function deepCopyObservation(obs: Observation): Observation {
     actionHistory: [...obs.actionHistory],
     legalActions: obs.legalActions ? obs.legalActions.map((a) => ({ ...a })) : undefined,
   };
+}
+
+/**
+ * Builds Observation for a given seat from GameState. Includes only legal info (FR-9).
+ * visibleHands shows other players' cards with color/value only where hinted (FR-19).
+ * Does NOT include own cards. Uses deepCopy equivalent for nested structures.
+ */
+export function buildObservation(state: GameState, seatIndex: number): Observation {
+  const visibleHands: Record<number, VisibleCard[]> = {};
+  for (let p = 0; p < state.playerCount; p++) {
+    if (p === seatIndex) continue;
+    const hand = state.hands[p];
+    visibleHands[p] = hand.map((card) => {
+      const known = state.hintKnowledge.get(card.id) ?? {};
+      return {
+        cardId: card.id,
+        color: known.color,
+        value: known.value,
+      };
+    });
+  }
+
+  const obs: Observation = {
+    currentPlayer: state.currentPlayer,
+    selfSeat: seatIndex,
+    visibleHands,
+    ownHandSize: state.hands[seatIndex].length,
+    hintsRemaining: state.hintTokens,
+    livesRemaining: state.lifeTokens,
+    discardPile: state.discardPile.map((c) => ({ ...c })),
+    playedStacks: { ...state.playedStacks },
+    deckCount: state.deck.length,
+    actionHistory: [...state.actionHistory],
+    legalActions: getLegalActions(state, state.currentPlayer),
+  };
+  return deepCopyObservation(obs);
 }

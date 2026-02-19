@@ -11,3 +11,19 @@ export interface Card {
   color: Color;
   value: number;
 }
+
+export const DECK_COMPOSITION: Record<number, number> = {
+  1: 3,
+  2: 2,
+  3: 2,
+  4: 2,
+  5: 1,
+};
+
+export const COLORS: Color[] = [
+  Color.Red,
+  Color.Yellow,
+  Color.Green,
+  Color.Blue,
+  Color.White,
+];
