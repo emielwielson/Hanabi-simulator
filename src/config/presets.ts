@@ -15,4 +15,9 @@ export const CONFIG_PRESETS: ConfigPreset[] = [
     label: '4 players (500 games)',
     config: createDefaultConfig({ playerCount: 4, gameCount: 500 }),
   },
+  {
+    id: 'debug',
+    label: 'Debug (2p, 10 games, full traces)',
+    config: createDefaultConfig({ gameCount: 10, loggingMode: 'debug' }),
+  },
 ];

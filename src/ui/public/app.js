@@ -176,10 +176,93 @@ async function renderTraces(timestamp, summary) {
       return;
     }
     section.style.display = 'block';
-    section.innerHTML = '<h3>Debug Traces</h3><ul>' + files.map((f) => `<li><a href="/api/results/${timestamp}/traces/${encodeURIComponent(f)}" download>${f}</a></li>`).join('') + '</ul>';
+    section.innerHTML =
+      '<h3>Debug Traces</h3><ul>' +
+      files
+        .map(
+          (f) =>
+            `<li><a href="/api/results/${timestamp}/traces/${encodeURIComponent(f)}" download>${f}</a> ` +
+            `<button data-timestamp="${timestamp}" data-filename="${f}">View replay</button></li>`
+        )
+        .join('') +
+      '</ul>';
+    section.querySelectorAll('button[data-timestamp]').forEach((btn) => {
+      btn.onclick = () => openReplay(btn.dataset.timestamp, btn.dataset.filename);
+    });
   } catch {
     section.style.display = 'none';
   }
+}
+
+let replayState = null;
+
+async function openReplay(timestamp, filename) {
+  try {
+    const [trace, resultData] = await Promise.all([
+      api(`/api/results/${timestamp}/traces/${encodeURIComponent(filename)}?json=1`),
+      api(`/api/results/${timestamp}`),
+    ]);
+    const config = resultData.summary.config || { playerCount: 2, hintTokens: 8, lifeTokens: 3 };
+    const steps = buildReplaySteps(trace, config);
+    replayState = { trace, steps, timestamp, filename };
+    document.getElementById('replayTitle').textContent = `Replay: ${filename}`;
+    showReplayStep(0);
+    document.getElementById('replayOverlay').classList.add('visible');
+  } catch (e) {
+    alert('Failed to load replay: ' + e.message);
+  }
+}
+
+let currentReplayStep = 0;
+
+function showReplayStep(stepIndex) {
+  if (!replayState) return;
+  const { steps, trace } = replayState;
+  currentReplayStep = Math.max(0, Math.min(stepIndex, steps.length - 1));
+  const state = steps[currentReplayStep];
+
+  document.getElementById('replayFirst').disabled = currentReplayStep === 0;
+  document.getElementById('replayPrev').disabled = currentReplayStep === 0;
+  document.getElementById('replayNext').disabled = currentReplayStep === steps.length - 1;
+  document.getElementById('replayLast').disabled = currentReplayStep === steps.length - 1;
+  document.getElementById('replayStepLabel').textContent = `Step ${currentReplayStep} of ${steps.length - 1}`;
+
+  let html = '';
+  for (let p = 0; p < state.hands.length; p++) {
+    const cursor = p === state.currentPlayer ? ' ← current' : '';
+    html += `<div class="hand"><strong>Player ${p}${cursor}:</strong> `;
+    state.hands[p].forEach((c) => {
+      html += `<span class="card">${COLOR_NAMES[c.color]} ${c.value}</span>`;
+    });
+    html += '</div>';
+  }
+  html += `<div><strong>Stacks:</strong> R:${state.playedStacks[0]} Y:${state.playedStacks[1]} G:${state.playedStacks[2]} B:${state.playedStacks[3]} W:${state.playedStacks[4]}</div>`;
+  html += `<div><strong>Discard:</strong> ${state.discardPile.map((c) => COLOR_NAMES[c.color] + c.value).join(', ') || '—'}</div>`;
+  html += `<div><strong>Tokens:</strong> Hints: ${state.hintTokens}, Lives: ${state.lifeTokens}</div>`;
+  html += `<div><strong>Deck:</strong> ${state.deck.length} cards remaining</div>`;
+  if (currentReplayStep > 0 && trace.events[currentReplayStep - 1]) {
+    html += `<div class="last-move">Last move: ${formatEvent(trace.events[currentReplayStep - 1])}</div>`;
+  } else if (currentReplayStep === 0) {
+    html += '<div class="last-move">Initial deal</div>';
+  }
+
+  document.getElementById('replayState').innerHTML = html;
+}
+
+function setupReplayControls() {
+  document.getElementById('replayClose').onclick = () => {
+    document.getElementById('replayOverlay').classList.remove('visible');
+    replayState = null;
+  };
+  document.getElementById('replayFirst').onclick = () => showReplayStep(0);
+  document.getElementById('replayPrev').onclick = () => showReplayStep(currentReplayStep - 1);
+  document.getElementById('replayNext').onclick = () => showReplayStep(currentReplayStep + 1);
+  document.getElementById('replayLast').onclick = () => showReplayStep(replayState?.steps.length - 1 ?? 0);
+  document.getElementById('replayOverlay').onclick = (e) => {
+    if (e.target.id === 'replayOverlay') {
+      document.getElementById('replayOverlay').classList.remove('visible');
+    }
+  };
 }
 
 async function loadResultList() {
@@ -192,6 +275,7 @@ async function loadResultList() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  setupReplayControls();
   await loadStrategies();
   await loadConfigs();
   await loadResultList();

@@ -26,6 +26,20 @@
     .error { color: #c00; margin-top: 0.5rem; }
     .traces { margin-top: 1rem; font-size: 0.9rem; }
     .traces a { color: #0066cc; }
+    .traces button { margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.85rem; cursor: pointer; background: #333; color: white; border: none; border-radius: 3px; }
+    .traces button:hover { background: #555; }
+
+    .replay-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .replay-overlay.visible { display: flex; }
+    .replay-modal { background: white; border-radius: 8px; max-width: 90%; max-height: 90%; overflow: auto; padding: 1.5rem; }
+    .replay-controls { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .replay-controls button { padding: 0.4rem 0.8rem; cursor: pointer; }
+    .replay-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .replay-state { font-family: monospace; font-size: 0.9rem; background: #f8f8f8; padding: 1rem; border-radius: 4px; margin-bottom: 0.5rem; }
+    .replay-state .hand { margin: 0.25rem 0; }
+    .replay-state .card { display: inline-block; padding: 2px 6px; margin: 2px; background: #fff; border: 1px solid #ccc; border-radius: 3px; }
+    .replay-state .last-move { margin-top: 0.5rem; font-weight: 600; color: #333; }
+    .replay-close { float: right; margin-top: -0.5rem; margin-right: -0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -87,6 +101,22 @@
     <div id="tracesSection" class="traces" style="display: none;"></div>
   </div>
 
+  <div id="replayOverlay" class="replay-overlay">
+    <div class="replay-modal">
+      <button class="replay-close" id="replayClose">×</button>
+      <h3 id="replayTitle">Game Replay</h3>
+      <div class="replay-controls">
+        <button id="replayFirst">«</button>
+        <button id="replayPrev">‹ Prev</button>
+        <span id="replayStepLabel">Step 0 of 0</span>
+        <button id="replayNext">Next ›</button>
+        <button id="replayLast">»</button>
+      </div>
+      <div id="replayState" class="replay-state"></div>
+    </div>
+  </div>
+
+  <script src="replay.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

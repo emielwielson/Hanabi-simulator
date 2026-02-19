@@ -170,6 +170,7 @@ app.get('/api/results/:timestamp/traces', (req, res) => {
 
 app.get('/api/results/:timestamp/traces/:filename', (req, res) => {
   const { timestamp, filename } = req.params;
+  const asJson = req.query.json === '1';
 
   if (!safeTimestamp(timestamp) || !safeFilename(filename)) {
     res.status(400).json({ error: 'Invalid parameters' });
@@ -182,7 +183,12 @@ app.get('/api/results/:timestamp/traces/:filename', (req, res) => {
     return;
   }
 
-  res.download(tracePath);
+  if (asJson) {
+    const trace = JSON.parse(fs.readFileSync(tracePath, 'utf-8'));
+    res.json(trace);
+  } else {
+    res.download(tracePath);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
