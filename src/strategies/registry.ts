@@ -1,6 +1,7 @@
 import type { HanabiStrategy } from './types';
 import { ExampleStrategy } from './example-strategy';
 import { HintPartnerStrategy } from './hint-partner-strategy';
+import { HintPartnerDeductionStrategy } from './hint-partner-deduction-strategy';
 
 export interface StrategyEntry {
   name: string;
@@ -20,6 +21,10 @@ export function getStrategies(): StrategyEntry[] {
     {
       name: 'HintPartner',
       factory: () => new HintPartnerStrategy(42),
+    },
+    {
+      name: 'HintPartnerDeduction',
+      factory: () => new HintPartnerDeductionStrategy(42),
     },
   ];
 }
