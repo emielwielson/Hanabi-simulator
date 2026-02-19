@@ -204,7 +204,7 @@ async function openReplay(timestamp, filename) {
     ]);
     const config = resultData.summary.config || { playerCount: 2, hintTokens: 8, lifeTokens: 3 };
     const steps = buildReplaySteps(trace, config);
-    replayState = { trace, steps, timestamp, filename };
+    replayState = { trace, steps, timestamp, filename, config };
     document.getElementById('replayTitle').textContent = `Replay: ${filename}`;
     showReplayStep(0);
     document.getElementById('replayOverlay').classList.add('visible');
@@ -217,7 +217,7 @@ let currentReplayStep = 0;
 
 function showReplayStep(stepIndex) {
   if (!replayState) return;
-  const { steps, trace } = replayState;
+  const { steps, trace, config } = replayState;
   currentReplayStep = Math.max(0, Math.min(stepIndex, steps.length - 1));
   const state = steps[currentReplayStep];
 
@@ -227,23 +227,34 @@ function showReplayStep(stepIndex) {
   document.getElementById('replayLast').disabled = currentReplayStep === steps.length - 1;
   document.getElementById('replayStepLabel').textContent = `Step ${currentReplayStep} of ${steps.length - 1}`;
 
-  let html = renderStacks(state.playedStacks);
+  const lastEvent = currentReplayStep > 0 ? trace.events[currentReplayStep - 1] : null;
+  const maxHints = config?.hintTokens ?? 8;
+  const maxLives = config?.lifeTokens ?? 3;
+  let html = '<div class="replay-stacks-and-hands-wrapper">';
+  html += '<div class="replay-align-block">';
+  html += '<div class="stacks-and-hint-row">';
+  html += '<div class="stacks-row">' + renderStacks(state.playedStacks, lastEvent) + '</div>';
+  html += '<div class="stacks-hint-spacer"></div>';
+  html += renderLastTurnHintCard(lastEvent) + '</div>';
+  html += '<div class="hands-column">';
   for (let p = 0; p < state.hands.length; p++) {
-    const currentClass = p === state.currentPlayer ? ' hand-row current-player' : ' hand-row';
-    html += `<div class="${currentClass.trim()}"><strong class="hand-label">Player ${p}</strong> <div class="hand-cards">`;
+    const labelClass = p === state.currentPlayer ? ' hand-label current-player' : ' hand-label';
+    html += `<div class="hand-row"><strong class="${labelClass.trim()}">Player ${p}</strong> <div class="hand-cards">`;
     state.hands[p].forEach((c, i) => {
       html += renderCard(c, state.hintKnowledge, i, false);
     });
     html += '</div></div>';
   }
-  html += `<div class="replay-meta"><strong>Discard:</strong> ${state.discardPile.map((c) => COLOR_NAMES[c.color] + c.value).join(', ') || '—'} &nbsp;|&nbsp; `;
-  html += `<strong>Tokens:</strong> Hints: ${state.hintTokens}, Lives: ${state.lifeTokens} &nbsp;|&nbsp; `;
-  html += `<strong>Deck:</strong> ${state.deck.length} cards</div>`;
-  if (currentReplayStep > 0 && trace.events[currentReplayStep - 1]) {
-    html += `<div class="last-move">Last move: ${formatEvent(trace.events[currentReplayStep - 1])}</div>`;
-  } else if (currentReplayStep === 0) {
+  html += '</div></div>';
+  html += '<div class="replay-tokens-wrap">' + renderReplayTokens(state.hintTokens, state.lifeTokens, maxHints, maxLives) + '</div>';
+  html += '</div>';
+  html += `<div class="replay-meta"><strong>Deck:</strong> ${state.deck.length} cards</div>`;
+  if (lastEvent) {
+    html += `<div class="last-move">Last move: ${formatEvent(lastEvent)}</div>`;
+  } else {
     html += '<div class="last-move">Initial deal</div>';
   }
+  html += renderDiscardPile(state.discardPile, lastEvent);
 
   document.getElementById('replayState').innerHTML = html;
 }

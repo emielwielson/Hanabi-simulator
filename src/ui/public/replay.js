@@ -129,6 +129,36 @@ function formatEvent(ev) {
   return '?';
 }
 
+/** Renders the "last turn" hint card for top-right (only when last event is a hint). */
+function renderLastTurnHintCard(ev) {
+  if (!ev || ev.type !== 'hint') return '';
+  const isColor = ev.hintType === 'color';
+  const bgColor = isColor ? (CARD_COLORS[ev.hintValue] ?? '#94a3b8') : '';
+  const textColor = ev.hintValue === 4 ? '#1e293b' : '#1e293b';
+  const style = isColor
+    ? `background:linear-gradient(180deg, ${bgColor} 0%, ${adjustBrightness(bgColor, -0.2)} 100%); color:${textColor}`
+    : '';
+  const cls = isColor ? 'hint-card-mini hint-color' : 'hint-card-mini hint-number';
+  const content = isColor ? '' : String(ev.hintValue);
+  return `<div class="replay-last-turn"><span class="replay-last-turn-label">Last hint</span><div class="${cls}" style="${style}">${content}</div></div>`;
+}
+
+/** Renders visual lives and hints tokens (to the right of hands). */
+function renderReplayTokens(hintTokens, lifeTokens, maxHints, maxLives) {
+  let html = '<div class="replay-tokens">';
+  html += '<div class="replay-tokens-group"><span class="replay-tokens-label">Hints</span><div class="replay-token-hints">';
+  for (let i = 0; i < maxHints; i++) {
+    html += `<span class="token-hint ${i < hintTokens ? 'token-available' : 'token-used'}" title="Hint ${i + 1} of ${maxHints}"></span>`;
+  }
+  html += '</div></div>';
+  html += '<div class="replay-tokens-group"><span class="replay-tokens-label">Lives</span><div class="replay-token-lives">';
+  for (let i = 0; i < maxLives; i++) {
+    html += `<span class="token-life ${i < lifeTokens ? 'token-available' : 'token-used'}" title="Life ${i + 1} of ${maxLives}">♥</span>`;
+  }
+  html += '</div></div></div>';
+  return html;
+}
+
 /**
  * For a card and its hint knowledge, return which colors and numbers are still possible.
  * When we know color/value from a hint, only that one is possible; others disappear.
@@ -176,31 +206,67 @@ function adjustBrightness(hex, amount) {
   return `rgb(${r},${g},${b})`;
 }
 
-/** Renders a stack card (no hints, just face). For played stacks. */
-function renderStackCard(color, value) {
+/** Renders a stack card (no hints, just face). For played stacks. highlight: optional bool for last-moved border. */
+function renderStackCard(color, value, options = {}) {
+  const highlight = options.highlight ? ' last-moved-card' : '';
   const bgColor = CARD_COLORS[color] ?? '#94a3b8';
   const textColor = color === 4 ? '#1e293b' : '#1e293b';
   return `
-    <div class="hanabi-stack-card">
+    <div class="hanabi-stack-card${highlight}">
       <div class="hanabi-card-face" style="background:linear-gradient(180deg, ${bgColor} 0%, ${adjustBrightness(bgColor, -0.2)} 100%); color:${textColor}">
         <span class="hanabi-card-value">${value}</span>
       </div>
     </div>`;
 }
 
-/** Renders all 5 color stacks as columns, showing only the top card of each. */
-function renderStacks(playedStacks) {
+/** Renders all 5 color stacks as columns, showing only the top card of each. lastEvent: optional, to highlight last played card. */
+function renderStacks(playedStacks, lastEvent) {
+  const highlightTopOfColor = lastEvent?.type === 'play' && lastEvent.success && lastEvent.card
+    ? lastEvent.card.color
+    : null;
   let html = '<div class="stacks-row">';
   for (let color = 0; color < 5; color++) {
     const topValue = playedStacks[color] ?? 0;
+    const isLastPlayed = highlightTopOfColor === color && topValue === lastEvent?.card?.value;
     html += `<div class="stack-col"><div class="stack-label">${COLOR_NAMES[color]}</div>`;
     if (topValue > 0) {
-      html += renderStackCard(color, topValue);
+      html += renderStackCard(color, topValue, { highlight: isLastPlayed });
     } else {
       html += '<div class="stack-empty">—</div>';
     }
     html += '</div>';
   }
   html += '</div>';
+  return html;
+}
+
+/** Renders discard pile at bottom, grouped by color and sorted by value. lastEvent: optional, to highlight last discarded/misplayed card. */
+function renderDiscardPile(discardPile, lastEvent) {
+  const lastCardId = (lastEvent?.type === 'discard' || (lastEvent?.type === 'play' && !lastEvent?.success)) && lastEvent?.card
+    ? lastEvent.card.id
+    : null;
+  const byColor = [[], [], [], [], []];
+  for (const card of discardPile) {
+    if (card.color >= 0 && card.color <= 4) {
+      byColor[card.color].push(card);
+    }
+  }
+  for (let c = 0; c < 5; c++) {
+    byColor[c].sort((a, b) => a.value - b.value);
+  }
+
+  let html = '<div class="discard-pile-section"><div class="discard-pile-label">Discard pile</div><div class="discard-pile-by-color">';
+  for (let color = 0; color < 5; color++) {
+    html += `<div class="discard-color-row"><div class="stack-label">${COLOR_NAMES[color]}</div><div class="discard-cards-row">`;
+    if (byColor[color].length > 0) {
+      for (const card of byColor[color]) {
+        html += renderStackCard(card.color, card.value, { highlight: lastCardId != null && card.id === lastCardId });
+      }
+    } else {
+      html += '<div class="stack-empty">—</div>';
+    }
+    html += '</div></div>';
+  }
+  html += '</div></div>';
   return html;
 }

@@ -30,26 +30,54 @@
     .traces button { margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.85rem; cursor: pointer; background: #333; color: white; border: none; border-radius: 3px; }
     .traces button:hover { background: #555; }
 
-    .replay-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .replay-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: stretch; justify-content: stretch; z-index: 100; }
     .replay-overlay.visible { display: flex; }
-    .replay-modal { background: white; border-radius: 8px; max-width: 95%; width: 800px; max-height: 90%; overflow: auto; padding: 1.5rem; }
+    .replay-modal { position: relative; background: white; width: 100%; height: 100%; max-width: none; max-height: none; overflow: auto; padding: 1.5rem; display: flex; flex-direction: column; }
     .replay-controls { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .replay-controls button { padding: 0.4rem 0.8rem; cursor: pointer; }
     .replay-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
     .replay-state { font-size: 0.9rem; background: #1e3a5f; padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; color: #f8fafc; }
-    .replay-state .stacks-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .replay-stacks-and-hands-wrapper { display: flex; flex-direction: row; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .replay-align-block { display: flex; flex-direction: column; width: fit-content; flex: 0 0 auto; align-items: stretch; }
+    .stacks-and-hint-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; min-width: 0; }
+    .stacks-hint-spacer { flex: 1; min-width: 0.5rem; }
+    .replay-state .stacks-row { display: flex; gap: 0.75rem; margin-bottom: 0; }
+    .replay-last-turn { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; flex-shrink: 0; }
+    .replay-last-turn-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .replay-last-turn .hint-card-mini { width: 52px; height: 56px; border-radius: 6px; overflow: hidden; border: 2px solid #64748b; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; color: #1e293b; text-shadow: 0 0 1px rgba(255,255,255,0.5); }
+    .replay-last-turn .hint-card-mini.hint-color { }
+    .replay-last-turn .hint-card-mini.hint-number { background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%); }
+    .hanabi-stack-card.last-moved-card { border: 10px solid transparent; border-radius: 8px; background: linear-gradient(#1e3a5f, #1e3a5f) padding-box, linear-gradient(135deg, #fbbf24, #ef4444, #3b82f6, #22c55e, #f59e0b, #fbbf24) border-box; background-clip: padding-box, border-box; box-shadow: 0 0 16px rgba(251, 191, 36, 0.4); border-color: transparent; }
+    .replay-state .discard-pile-section { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #334155; }
+    .replay-state .discard-pile-label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.5rem; }
+    .replay-state .discard-pile-by-color { display: flex; flex-direction: column; gap: 0.5rem; }
+    .replay-state .discard-color-row { display: flex; flex-direction: row; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+    .replay-state .discard-color-row .stack-label { flex-shrink: 0; margin: 0; min-width: 3.5rem; }
+    .replay-state .discard-cards-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; align-items: center; }
     .replay-state .stack-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .replay-state .stack-label { font-size: 0.75rem; color: #94a3b8; }
     .replay-state .stack-empty { width: 44px; height: 48px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 0.9rem; }
-    .hanabi-stack-card { width: 44px; border-radius: 4px; overflow: hidden; border: 1px solid #475569; }
-    .hanabi-stack-card .hanabi-card-face { height: 48px; font-size: 1.25rem; }
-    .replay-state .hand-row { margin: 1rem 0; display: flex; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap; border-radius: 4px; padding: 4px; }
-    .replay-state .hand-row.current-player { outline: 2px solid #fbbf24; outline-offset: 2px; }
-    .replay-state .hand-label { flex: 0 0 70px; margin-top: 0.5rem; }
+    .hanabi-stack-card { box-sizing: border-box; width: 64px; min-height: 68px; border: 10px solid transparent; border-radius: 8px; overflow: hidden; margin: 0; box-shadow: inset 0 0 0 1px #475569; }
+    .hanabi-stack-card .hanabi-card-face { width: 44px; height: 48px; font-size: 1.25rem; box-sizing: border-box; }
+    .replay-tokens-wrap { flex-shrink: 0; }
+    .hands-column { width: fit-content; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    .replay-tokens { display: flex; flex-direction: column; gap: 0.75rem; flex-shrink: 0; padding: 0.5rem 0; }
+    .replay-tokens-group { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+    .replay-tokens-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .replay-token-hints, .replay-token-lives { display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: center; }
+    .token-hint { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #64748b; }
+    .token-hint.token-available { background: #3b82f6; border-color: #60a5fa; }
+    .token-hint.token-used { background: transparent; border-color: #475569; opacity: 0.6; }
+    .token-life { font-size: 1.25rem; line-height: 1; }
+    .token-life.token-available { color: #ef4444; }
+    .token-life.token-used { color: #475569; opacity: 0.5; }
+    .replay-state .hand-row { display: inline-flex; align-items: flex-end; gap: 0.5rem; border-radius: 4px; padding: 4px; width: fit-content; }
+    .replay-state .hand-label { flex: 0 0 70px; margin-top: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .replay-state .hand-label.current-player { background: rgba(251, 191, 36, 0.35); color: #fbbf24; font-weight: 700; }
     .replay-state .hand-cards { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .replay-state .last-move { margin-top: 1rem; font-weight: 600; color: #cbd5e1; }
     .replay-state .replay-meta { margin-top: 0.5rem; color: #94a3b8; font-size: 0.85rem; }
-    .replay-close { float: right; margin-top: -0.5rem; margin-right: -0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; }
+    .replay-close { position: absolute; top: 1rem; right: 1rem; padding: 0.25rem 0.5rem; cursor: pointer; z-index: 10; }
 
     .hanabi-card { width: 70px; border-radius: 6px; overflow: hidden; border: 2px solid #475569; background: #0f172a; }
     .hanabi-card-face { height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; color: #1e293b; text-shadow: 0 0 1px rgba(255,255,255,0.5); }
@@ -135,7 +163,7 @@
     </div>
   </div>
 
-  <script src="replay.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="replay.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
