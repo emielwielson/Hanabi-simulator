@@ -44,7 +44,7 @@ export class HintPartnerStrategy implements HanabiStrategy {
       return { type: 'play', cardIndex: 0 };
     }
 
-    // 1. If we received a hint, play the leftmost matching card
+    // 1. If we received a hint, play the card at position N-1 (position-encoding)
     const playFromHint = this.getPlayFromHint(observation);
     if (playFromHint !== null) {
       const playAction = legalActions.find(

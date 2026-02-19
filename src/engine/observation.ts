@@ -5,7 +5,7 @@ import type { GameEvent } from './events';
 import type { GameState } from './game-state';
 
 /**
- * Card in another player's hand. Color and value are visible only when hinted (FR-19).
+ * Card in another player's hand. In standard Hanabi, you see all other players' cards.
  */
 export interface VisibleCard {
   cardId: number;
@@ -59,7 +59,8 @@ export function deepCopyObservation(obs: Observation): Observation {
 
 /**
  * Builds Observation for a given seat from GameState. Includes only legal info (FR-9).
- * visibleHands shows other players' cards with color/value only where hinted (FR-19).
+ * In standard Hanabi, you see all other players' cards but not your own. visibleHands
+ * therefore shows full color/value for all partner cards.
  * Does NOT include own cards. Uses deepCopy equivalent for nested structures.
  */
 export function buildObservation(state: GameState, seatIndex: number): Observation {
@@ -67,14 +68,11 @@ export function buildObservation(state: GameState, seatIndex: number): Observati
   for (let p = 0; p < state.playerCount; p++) {
     if (p === seatIndex) continue;
     const hand = state.hands[p];
-    visibleHands[p] = hand.map((card) => {
-      const known = state.hintKnowledge.get(card.id) ?? {};
-      return {
-        cardId: card.id,
-        color: known.color,
-        value: known.value,
-      };
-    });
+    visibleHands[p] = hand.map((card) => ({
+      cardId: card.id,
+      color: card.color,
+      value: card.value,
+    }));
   }
 
   const obs: Observation = {
