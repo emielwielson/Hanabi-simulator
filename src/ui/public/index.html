@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Hanabi Strategy Simulator</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -31,15 +32,33 @@
 
     .replay-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100; }
     .replay-overlay.visible { display: flex; }
-    .replay-modal { background: white; border-radius: 8px; max-width: 90%; max-height: 90%; overflow: auto; padding: 1.5rem; }
+    .replay-modal { background: white; border-radius: 8px; max-width: 95%; width: 800px; max-height: 90%; overflow: auto; padding: 1.5rem; }
     .replay-controls { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .replay-controls button { padding: 0.4rem 0.8rem; cursor: pointer; }
     .replay-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .replay-state { font-family: monospace; font-size: 0.9rem; background: #f8f8f8; padding: 1rem; border-radius: 4px; margin-bottom: 0.5rem; }
-    .replay-state .hand { margin: 0.25rem 0; }
-    .replay-state .card { display: inline-block; padding: 2px 6px; margin: 2px; background: #fff; border: 1px solid #ccc; border-radius: 3px; }
-    .replay-state .last-move { margin-top: 0.5rem; font-weight: 600; color: #333; }
+    .replay-state { font-size: 0.9rem; background: #1e3a5f; padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; color: #f8fafc; }
+    .replay-state .stacks-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .replay-state .stack-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .replay-state .stack-label { font-size: 0.75rem; color: #94a3b8; }
+    .replay-state .stack-empty { width: 44px; height: 48px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 0.9rem; }
+    .hanabi-stack-card { width: 44px; border-radius: 4px; overflow: hidden; border: 1px solid #475569; }
+    .hanabi-stack-card .hanabi-card-face { height: 48px; font-size: 1.25rem; }
+    .replay-state .hand-row { margin: 1rem 0; display: flex; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap; border-radius: 4px; padding: 4px; }
+    .replay-state .hand-row.current-player { outline: 2px solid #fbbf24; outline-offset: 2px; }
+    .replay-state .hand-label { flex: 0 0 70px; margin-top: 0.5rem; }
+    .replay-state .hand-cards { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .replay-state .last-move { margin-top: 1rem; font-weight: 600; color: #cbd5e1; }
+    .replay-state .replay-meta { margin-top: 0.5rem; color: #94a3b8; font-size: 0.85rem; }
     .replay-close { float: right; margin-top: -0.5rem; margin-right: -0.5rem; padding: 0.25rem 0.5rem; cursor: pointer; }
+
+    .hanabi-card { width: 70px; border-radius: 6px; overflow: hidden; border: 2px solid #475569; background: #0f172a; }
+    .hanabi-card-face { height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; color: #1e293b; text-shadow: 0 0 1px rgba(255,255,255,0.5); }
+    .hanabi-card-index { position: absolute; top: 4px; left: 6px; font-size: 0.7rem; font-weight: 600; color: rgba(0,0,0,0.4); }
+    .hanabi-card-value { font-size: 2rem; font-weight: 700; }
+    .hanabi-card-hints { padding: 4px 6px; background: rgba(0,0,0,0.35); display: flex; flex-direction: column; gap: 2px; align-items: center; }
+    .hint-colors { display: flex; gap: 2px; }
+    .hint-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .hint-numbers { display: flex; gap: 2px; font-size: 0.65rem; color: #f8fafc; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -116,7 +135,7 @@
     </div>
   </div>
 
-  <script src="replay.js"></script>
-  <script src="app.js"></script>
+  <script src="replay.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

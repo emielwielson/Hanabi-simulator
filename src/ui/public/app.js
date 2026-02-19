@@ -227,19 +227,18 @@ function showReplayStep(stepIndex) {
   document.getElementById('replayLast').disabled = currentReplayStep === steps.length - 1;
   document.getElementById('replayStepLabel').textContent = `Step ${currentReplayStep} of ${steps.length - 1}`;
 
-  let html = '';
+  let html = renderStacks(state.playedStacks);
   for (let p = 0; p < state.hands.length; p++) {
-    const cursor = p === state.currentPlayer ? ' ← current' : '';
-    html += `<div class="hand"><strong>Player ${p}${cursor}:</strong> `;
-    state.hands[p].forEach((c) => {
-      html += `<span class="card">${COLOR_NAMES[c.color]} ${c.value}</span>`;
+    const currentClass = p === state.currentPlayer ? ' hand-row current-player' : ' hand-row';
+    html += `<div class="${currentClass.trim()}"><strong class="hand-label">Player ${p}</strong> <div class="hand-cards">`;
+    state.hands[p].forEach((c, i) => {
+      html += renderCard(c, state.hintKnowledge, i, false);
     });
-    html += '</div>';
+    html += '</div></div>';
   }
-  html += `<div><strong>Stacks:</strong> R:${state.playedStacks[0]} Y:${state.playedStacks[1]} G:${state.playedStacks[2]} B:${state.playedStacks[3]} W:${state.playedStacks[4]}</div>`;
-  html += `<div><strong>Discard:</strong> ${state.discardPile.map((c) => COLOR_NAMES[c.color] + c.value).join(', ') || '—'}</div>`;
-  html += `<div><strong>Tokens:</strong> Hints: ${state.hintTokens}, Lives: ${state.lifeTokens}</div>`;
-  html += `<div><strong>Deck:</strong> ${state.deck.length} cards remaining</div>`;
+  html += `<div class="replay-meta"><strong>Discard:</strong> ${state.discardPile.map((c) => COLOR_NAMES[c.color] + c.value).join(', ') || '—'} &nbsp;|&nbsp; `;
+  html += `<strong>Tokens:</strong> Hints: ${state.hintTokens}, Lives: ${state.lifeTokens} &nbsp;|&nbsp; `;
+  html += `<strong>Deck:</strong> ${state.deck.length} cards</div>`;
   if (currentReplayStep > 0 && trace.events[currentReplayStep - 1]) {
     html += `<div class="last-move">Last move: ${formatEvent(trace.events[currentReplayStep - 1])}</div>`;
   } else if (currentReplayStep === 0) {
