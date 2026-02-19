@@ -52,14 +52,21 @@ export function validateAction(state: GameState, action: Action): string | null 
       return `Invalid hint: targetPlayer ${action.targetPlayer} out of range`;
     }
     const targetHand = state.hands[action.targetPlayer];
-    const hasMatch = targetHand.some((card) => {
-      if (action.hintType === 'color') {
-        return card.color === action.hintValue;
+    if (action.hintType === 'number' && typeof action.hintValue === 'number') {
+      // Position-encoding: number hints 1-5 are always legal (encode slot index)
+      if (action.hintValue < 1 || action.hintValue > 5) {
+        return `Invalid hint: number hint must be 1-5, got ${action.hintValue}`;
       }
-      return card.value === action.hintValue;
-    });
-    if (!hasMatch) {
-      return 'Invalid hint: no matching cards in target hand';
+    } else {
+      const hasMatch = targetHand.some((card) => {
+        if (action.hintType === 'color') {
+          return card.color === action.hintValue;
+        }
+        return card.value === action.hintValue;
+      });
+      if (!hasMatch) {
+        return 'Invalid hint: no matching cards in target hand';
+      }
     }
     return null;
   }
@@ -90,9 +97,8 @@ export function getLegalActions(state: GameState, seatIndex: number): Action[] {
         }
       }
       for (let value = 1; value <= 5; value++) {
-        if (targetHand.some((c) => c.value === value)) {
-          actions.push({ type: 'hint', targetPlayer: target, hintType: 'number', hintValue: value });
-        }
+        // Number hints 1-5 are always legal (position-encoding convention)
+        actions.push({ type: 'hint', targetPlayer: target, hintType: 'number', hintValue: value });
       }
     }
   }

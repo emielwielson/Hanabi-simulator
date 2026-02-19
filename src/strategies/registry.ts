@@ -1,5 +1,6 @@
 import type { HanabiStrategy } from './types';
 import { ExampleStrategy } from './example-strategy';
+import { HintPartnerStrategy } from './hint-partner-strategy';
 
 export interface StrategyEntry {
   name: string;
@@ -15,6 +16,10 @@ export function getStrategies(): StrategyEntry[] {
     {
       name: 'Random',
       factory: () => new ExampleStrategy(42),
+    },
+    {
+      name: 'HintPartner',
+      factory: () => new HintPartnerStrategy(42),
     },
   ];
 }
