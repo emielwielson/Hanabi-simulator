@@ -24,6 +24,11 @@ export function writeResults(
     stats[result.name] = computeAggregateMetrics(result);
   }
 
+  const strategyTiming: Record<string, { totalMs: number; avgPerGameMs: number }> = {};
+  for (const r of simulationResult.results) {
+    strategyTiming[r.name] = { totalMs: r.timing.totalMs, avgPerGameMs: r.timing.avgPerGameMs };
+  }
+
   fs.writeFileSync(
     path.join(resultsDir, 'summary.json'),
     JSON.stringify(
@@ -31,6 +36,7 @@ export function writeResults(
         timestamp,
         strategyNames: simulationResult.results.map((r) => r.name),
         gameCount: simulationResult.seeds.length,
+        strategyTiming,
         config: {
           playerCount: config.playerCount,
           hintTokens: config.hintTokens,

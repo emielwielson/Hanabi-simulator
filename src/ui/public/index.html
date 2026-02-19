@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hanabi Strategy Simulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: 1.5rem; }
+    .controls { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .control { display: flex; flex-direction: column; gap: 0.25rem; }
+    label { font-size: 0.85rem; color: #666; }
+    select { padding: 0.5rem; min-width: 180px; }
+    button { padding: 0.5rem 1rem; cursor: pointer; background: #333; color: white; border: none; border-radius: 4px; }
+    button:hover { background: #555; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #results { margin-top: 2rem; display: none; }
+    #results.visible { display: block; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+    th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #eee; }
+    th { font-weight: 600; }
+    .chart-container { max-width: 600px; height: 300px; margin-bottom: 1.5rem; }
+    .comparison { margin-top: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 4px; }
+    .comparison select { min-width: 140px; margin: 0 0.5rem; }
+    .error { color: #c00; margin-top: 0.5rem; }
+    .traces { margin-top: 1rem; font-size: 0.9rem; }
+    .traces a { color: #0066cc; }
+  </style>
+</head>
+<body>
+  <h1>Hanabi Strategy Simulator</h1>
+
+  <div class="controls">
+    <div class="control">
+      <label>Strategies (Ctrl+click for multiple)</label>
+      <select id="strategies" multiple size="4"></select>
+    </div>
+    <div class="control">
+      <label>Config</label>
+      <select id="configs"></select>
+    </div>
+    <div class="control">
+      <button id="run">Run Simulation</button>
+    </div>
+    <div class="control">
+      <label>Or load previous run</label>
+      <select id="loadResult">
+        <option value="">—</option>
+      </select>
+    </div>
+  </div>
+  <div id="runError" class="error"></div>
+
+  <div id="results">
+    <h2>Results</h2>
+    <div id="resultMeta"></div>
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>Strategy</th>
+          <th>Avg Score</th>
+          <th>Std Dev</th>
+          <th>% Perfect</th>
+          <th>Games</th>
+          <th>Total Time (ms)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Score Histogram</h3>
+    <div class="chart-container">
+      <canvas id="histogramChart"></canvas>
+    </div>
+
+    <div class="comparison">
+      <h3>Strategy Comparison</h3>
+      <div>
+        <select id="compareA"></select>
+        vs
+        <select id="compareB"></select>
+      </div>
+      <div id="comparisonResult" style="margin-top: 0.5rem;"></div>
+    </div>
+
+    <div id="tracesSection" class="traces" style="display: none;"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

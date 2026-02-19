@@ -6,17 +6,22 @@
     "build": "node ./node_modules/typescript/bin/tsc",
     "test": "npm run build && node ./node_modules/jest/bin/jest.js",
     "start": "node dist/cli.js",
-    "simulate": "npm run build && node dist/cli.js"
+    "simulate": "npm run build && node dist/cli.js",
+  "ui": "npm run build && node dist/ui/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "Hanabi Strategy Simulator",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.10.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }
