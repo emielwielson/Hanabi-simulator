@@ -3,8 +3,8 @@ import { Color, COLORS } from './types';
 import type { Action } from './actions';
 import type { GameEvent, EndReason } from './events';
 import type { GameState } from './game-state';
+import { PLAYER_COUNT, createInitialState } from './game-state';
 import { validateAction } from './actions';
-import { createInitialState } from './game-state';
 import { buildObservation } from './observation';
 import type { Observation } from './observation';
 
@@ -26,7 +26,7 @@ function drawCard(state: GameState, playerIndex: number): void {
 }
 
 function advancePlayer(state: GameState): void {
-  state.currentPlayer = (state.currentPlayer + 1) % state.playerCount;
+  state.currentPlayer = (state.currentPlayer + 1) % PLAYER_COUNT;
 }
 
 function checkGameEnd(state: GameState): void {
@@ -102,6 +102,7 @@ export function executeAction(state: GameState, action: Action): GameEvent {
     state.hintTokens--;
     const targetHand = state.hands[action.targetPlayer];
     const matchedCardIndices: number[] = [];
+    const matchedCardIds: number[] = [];
     targetHand.forEach((card, idx) => {
       const matches =
         action.hintType === 'color'
@@ -109,6 +110,7 @@ export function executeAction(state: GameState, action: Action): GameEvent {
           : card.value === action.hintValue;
       if (matches) {
         matchedCardIndices.push(idx);
+        matchedCardIds.push(card.id);
         const known = state.hintKnowledge.get(card.id) ?? {};
         if (action.hintType === 'color') {
           known.color = action.hintValue as Color;
@@ -147,6 +149,7 @@ export function executeAction(state: GameState, action: Action): GameEvent {
       hintType: action.hintType,
       hintValue: action.hintValue,
       matchedCardIndices,
+      matchedCardIds,
     };
   }
 
@@ -155,10 +158,10 @@ export function executeAction(state: GameState, action: Action): GameEvent {
 
   if (!state.finalRoundStarted && state.deck.length === 0) {
     state.finalRoundStarted = true;
-    state.finalRoundTurnsLeft = state.playerCount;
+    state.finalRoundTurnsLeft = PLAYER_COUNT;
   }
   if (state.finalRoundStarted) {
-    state.finalRoundTurnsLeft = (state.finalRoundTurnsLeft ?? state.playerCount) - 1;
+    state.finalRoundTurnsLeft = (state.finalRoundTurnsLeft ?? PLAYER_COUNT) - 1;
   }
   checkGameEnd(state);
   return event;
@@ -178,14 +181,13 @@ export interface RunGameResult {
 
 export function runGame(
   seed: number,
-  playerCount: number,
-  getAction: (obs: Observation, currentPlayer: number) => Action
+  getAction: (obs: Observation) => Action
 ): RunGameResult {
-  const state = createInitialState(seed, playerCount);
+  const state = createInitialState(seed);
 
   while (!state.gameOver) {
     const obs = buildObservation(state, state.currentPlayer);
-    const action = getAction(obs, state.currentPlayer);
+    const action = getAction(obs);
     executeAction(state, action);
   }
 

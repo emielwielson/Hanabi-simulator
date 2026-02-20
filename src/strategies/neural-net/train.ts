@@ -6,10 +6,11 @@ import * as tf from '@tensorflow/tfjs-node';
 import path from 'path';
 import fs from 'fs';
 import type { Action } from '../../engine/actions';
+import { getLegalActionsFromObservation } from '../../engine/actions';
 import type { GameConfig } from '../../config';
 import type { HanabiStrategy, Observation } from '../types';
 import { HintPartnerStrategy } from '../hint-partner-strategy';
-import { runSingleGame } from '../../simulator/runner';
+import { runSingleGame, generateSeedList } from '../../simulator/runner';
 import { createDefaultConfig } from '../../config';
 import { encodeObservation, ENCODER_OUTPUT_SIZE } from './encoder';
 import { createModel, OUTPUT_ACTION_SIZE } from './model';
@@ -41,14 +42,8 @@ class RecordingStrategy implements HanabiStrategy {
     private ys: number[]
   ) {}
 
-  initialize(config: GameConfig, seatIndex: number): void {
-    this.expert.initialize(config, seatIndex);
-  }
-  onGameStart(obs: Observation): void {
-    this.expert.onGameStart(obs);
-  }
   getAction(obs: Observation): Action {
-    const legalActions = obs.legalActions ?? [];
+    const legalActions = getLegalActionsFromObservation(obs);
     const action = this.expert.getAction(obs);
     const idx = legalActions.findIndex((la) => actionEquals(la, action));
     if (idx >= 0) {
@@ -57,34 +52,20 @@ class RecordingStrategy implements HanabiStrategy {
     }
     return action;
   }
-  onActionResolved(ev: import('../../engine/events').GameEvent): void {
-    this.expert.onActionResolved(ev);
-  }
-  onGameEnd(result: import('../../engine/events').FinalState): void {
-    this.expert.onGameEnd(result);
-  }
-  clone(): HanabiStrategy {
-    return new RecordingStrategy(this.expert.clone(), this.xs, this.ys);
-  }
 }
 
 async function main(): Promise<void> {
-  const config: GameConfig = createDefaultConfig({
-    gameCount: NUM_GAMES,
-    playerCount: 2,
-  });
-  const seeds = Array.from({ length: NUM_GAMES }, (_, i) => i);
+  const config: GameConfig = createDefaultConfig({ gameCount: NUM_GAMES });
+  const seeds = generateSeedList(NUM_GAMES);
   const xs: number[][] = [];
   const ys: number[] = [];
 
-  const expert = new HintPartnerStrategy(42);
-  const recording = new RecordingStrategy(expert, xs, ys);
+  const expert: HanabiStrategy = new HintPartnerStrategy(42);
+  const recording: HanabiStrategy = new RecordingStrategy(expert, xs, ys);
 
   console.log(`Running ${NUM_GAMES} games with expert (HintPartner) to collect trajectories...`);
   for (const seed of seeds) {
-    const clones = Array.from({ length: config.playerCount }, () => recording.clone());
-    clones.forEach((c, i) => c.initialize(config, i));
-    runSingleGame(seed, config, clones, { collectTrace: false, decisionTimes: [] });
+    runSingleGame(seed, config, recording, { collectTrace: false, decisionTimes: [] });
   }
   console.log(`Collected ${xs.length} (observation, action_index) pairs.`);
 

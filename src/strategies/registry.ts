@@ -3,6 +3,8 @@ import { ExampleStrategy } from './example-strategy';
 import { HintPartnerStrategy } from './hint-partner-strategy';
 import { HintPartnerDiscardStrategy } from './hint-partner-discard-strategy';
 import { HintPartnerDiscardRightStrategy } from './hint-partner-discard-right-strategy';
+import { HintPartnerDiscardLeftSafeStrategy } from './hint-partner-discard-left-safe-strategy';
+import { HintPartnerDiscardRightSafeStrategy } from './hint-partner-discard-right-safe-strategy';
 import { NeuralNetStrategy } from './neural-net-strategy';
 
 export interface StrategyEntry {
@@ -31,6 +33,14 @@ export function getStrategies(): StrategyEntry[] {
     {
       name: 'HintPartner_discard_right',
       factory: () => new HintPartnerDiscardRightStrategy(42),
+    },
+    {
+      name: 'HintPartner_discard_left_safe',
+      factory: () => new HintPartnerDiscardLeftSafeStrategy(42),
+    },
+    {
+      name: 'HintPartner_discard_right_safe',
+      factory: () => new HintPartnerDiscardRightSafeStrategy(42),
     },
     {
       name: 'NeuralNet',

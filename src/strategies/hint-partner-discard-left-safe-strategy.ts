@@ -1,17 +1,19 @@
 import type { Action } from '../engine/actions';
 import { getLegalActionsFromObservation } from '../engine/actions';
 import { getSelfSeat } from '../engine/observation';
+import { getOwnHintKnowledge } from './observation-knowledge';
 import type { HanabiStrategy, Observation } from './types';
-import { getDeterministicRandom } from './observation-rng';
+import type { Color } from '../engine/types';
+import { DECK_COMPOSITION } from '../engine/types';
+import { getDeterministicRNG } from './observation-rng';
 
 /**
- * Strategy using position-encoding convention:
- * - Hint value N (1-5) means "your card at position N-1 (left to right) is playable"
- * - Hints 1-5 are always legal (don't need to match any card)
- * - When we receive hint N, play position N-1
- * - Other moves: random
+ * HintPartner_discard variant with safe discard: we discard from left to right (leftmost first).
+ * We never discard the leftmost card when: we know it's a 5 (only one per color in the deck),
+ * or we know both color and value and it's the only copy left; in those cases we discard the
+ * card to the right of it (index 1) instead.
  */
-export class HintPartnerStrategy implements HanabiStrategy {
+export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
   private readonly rngSeed: number;
 
   constructor(rngSeed = 42) {
@@ -20,9 +22,12 @@ export class HintPartnerStrategy implements HanabiStrategy {
 
   getAction(observation: Observation): Action {
     const legalActions = getLegalActionsFromObservation(observation);
+    const leftmostIndex = 0;
+    const rng = getDeterministicRNG(observation, this.rngSeed);
+
     if (legalActions.length === 0) {
       if (observation.ownHandSize > 0 && observation.hintsRemaining < 8) {
-        return { type: 'discard', cardIndex: 0 };
+        return { type: 'discard', cardIndex: leftmostIndex };
       }
       return { type: 'play', cardIndex: 0 };
     }
@@ -47,9 +52,60 @@ export class HintPartnerStrategy implements HanabiStrategy {
       if (hintLegal) return { ...hintLegal };
     }
 
-    const rng = getDeterministicRandom(observation, this.rngSeed);
-    const idx = Math.floor(rng * legalActions.length);
+    if (observation.hintsRemaining < 8) {
+      const knowledge = getOwnHintKnowledge(observation, leftmostIndex);
+      const color = knowledge?.color;
+      const value = knowledge?.value;
+      let discardIndex = leftmostIndex;
+      const isProtected =
+        value === 5 ||
+        (color !== undefined &&
+          value !== undefined &&
+          this.isOnlyCopyLeft(observation, color, value));
+      if (isProtected) {
+        const rightIndex = 1;
+        if (rightIndex < observation.ownHandSize) {
+          const discardRight = legalActions.find(
+            (a) => a.type === 'discard' && a.cardIndex === rightIndex
+          );
+          if (discardRight) discardIndex = rightIndex;
+        }
+      }
+      const discardAction = legalActions.find(
+        (a) => a.type === 'discard' && a.cardIndex === discardIndex
+      );
+      if (discardAction) return { ...discardAction };
+    }
+
+    if (observation.hintsRemaining >= 8) {
+      const colorHintActions = legalActions.filter(
+        (a) => a.type === 'hint' && a.hintType === 'color'
+      );
+      if (colorHintActions.length > 0) {
+        const idx = Math.floor(rng() * colorHintActions.length);
+        return { ...colorHintActions[idx] };
+      }
+    }
+
+    const idx = Math.floor(rng() * legalActions.length);
     return { ...legalActions[idx] };
+  }
+
+  private isOnlyCopyLeft(
+    observation: Observation,
+    color: Color,
+    value: number
+  ): boolean {
+    const total = DECK_COMPOSITION[value] ?? 0;
+    const onStack = (observation.playedStacks[color] ?? 0) >= value ? 1 : 0;
+    const inDiscard = observation.discardPile.filter(
+      (c) => c.color === color && c.value === value
+    ).length;
+    const inVisibleCards = observation.visibleCards.filter(
+      (c) => c.color === color && c.value === value
+    ).length;
+    const remaining = total - onStack - inDiscard - inVisibleCards;
+    return remaining === 1;
   }
 
   private getPlayFromHint(observation: Observation): number | null {

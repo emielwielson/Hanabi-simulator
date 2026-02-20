@@ -4,17 +4,15 @@
 const COLOR_NAMES = ['Red', 'Yellow', 'Green', 'Blue', 'White'];
 const CARD_COLORS = ['#dc2626', '#eab308', '#22c55e', '#3b82f6', '#f8fafc']; // R,Y,G,B,W
 
-function cardsPerPlayer(playerCount) {
-  return playerCount <= 3 ? 5 : 4;
-}
+const PLAYER_COUNT = 2;
+const CARDS_PER_PLAYER = 5;
 
-function deal(deck, playerCount) {
-  const cardsPer = cardsPerPlayer(playerCount);
+function deal(deck) {
   const hands = [];
   let idx = 0;
-  for (let p = 0; p < playerCount; p++) {
+  for (let p = 0; p < PLAYER_COUNT; p++) {
     const hand = [];
-    for (let i = 0; i < cardsPer; i++) {
+    for (let i = 0; i < CARDS_PER_PLAYER; i++) {
       hand.push(deck[idx++]);
     }
     hands.push(hand);
@@ -22,8 +20,8 @@ function deal(deck, playerCount) {
   return { hands, deck: deck.slice(idx) };
 }
 
-function advancePlayer(currentPlayer, playerCount) {
-  return (currentPlayer + 1) % playerCount;
+function advancePlayer(currentPlayer) {
+  return (currentPlayer + 1) % PLAYER_COUNT;
 }
 
 /**
@@ -31,11 +29,10 @@ function advancePlayer(currentPlayer, playerCount) {
  * state0 = initial deal. stateK = after applying events[0..K-1].
  */
 function buildReplaySteps(trace, config) {
-  const playerCount = config.playerCount ?? 2;
   const hintTokens = config.hintTokens ?? 8;
   const lifeTokens = config.lifeTokens ?? 3;
 
-  const { hands, deck } = deal([...trace.initialDeckOrder], playerCount);
+  const { hands, deck } = deal([...trace.initialDeckOrder]);
   const steps = [];
   const hintKnowledge = new Map();
 
@@ -108,7 +105,7 @@ function buildReplaySteps(trace, config) {
         }
       }
     }
-    state.currentPlayer = advancePlayer(state.currentPlayer, playerCount);
+    state.currentPlayer = advancePlayer(state.currentPlayer);
     steps.push(deepCopyState(state));
   }
 

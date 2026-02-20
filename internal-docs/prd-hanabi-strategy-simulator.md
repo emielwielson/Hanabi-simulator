@@ -79,8 +79,8 @@ The **Hanabi Strategy Simulator** is a TypeScript-based simulator for the cooper
 
 | ID | Requirement |
 |----|-------------|
-| FR-18 | Observation must include: `currentPlayer`, `selfSeat`, `visibleHands`, `ownHandSize`, `hintsRemaining`, `livesRemaining`, `discardPile`, `playedStacks`, `deckCount`, `actionHistory` |
-| FR-19 | `visibleHands` must show all other players' cards (color/number where hinted) |
+| FR-18 | Observation must include: `visibleCards` (partner's hand in 2-player), `observerSeat` (the seat this observation is for; "you"), `ownHandSize`, `hintsRemaining`, `livesRemaining`, `discardPile`, `playedStacks`, `deckCount`, `actionHistory`. The observer's seat ("self") is `getSelfSeat(observation)` which returns `observation.observerSeat`. Partner seat is `1 - observation.observerSeat` (2-player). Observation does not include legal actions; strategies are responsible for returning a valid action. The engine throws when an invalid action is returned. Strategies can call `validateActionForObservation(observation, action)` to check validity and `getLegalActionsFromObservation(observation)` to obtain the legal action list. |
+| FR-19 | `visibleCards` is the partner's hand (full identity: cardId, color, value). Observation includes `ownCardIds` (card IDs in the observer's hand by slot index). Hint knowledge is not stored on the observation; strategies that need it call `getOwnHintKnowledge(observation, slotIndex)` and `getKnownToHolder(observation, cardId)` from the observation-knowledge module (derived from `actionHistory` and hint events' `matchedCardIds`). |
 | FR-20 | `ownHandSize` is the count only; strategies never see their own cards |
 
 ### 4.4 Simulator
@@ -289,10 +289,10 @@ interface HanabiStrategy {
 
 ```typescript
 type Observation = {
-  currentPlayer: number
-  selfSeat: number
-  visibleHands: Record<number, VisibleCard[]>
+  visibleCards: VisibleCard[]   // partner's hand (2-player)
+  observerSeat: number          // seat this observation is for ("you")
   ownHandSize: number
+  ownCardIds: number[]   // card IDs in observer's hand by slot index
   hintsRemaining: number
   livesRemaining: number
   discardPile: Card[]
@@ -300,4 +300,7 @@ type Observation = {
   deckCount: number
   actionHistory: GameEvent[]
 }
+// Observer's seat: getSelfSeat(observation) === observation.observerSeat. Partner seat: 1 - observerSeat (2-player).
+// Legal actions: getLegalActionsFromObservation(obs); validate: validateActionForObservation(obs, action).
+// VisibleCard: cardId, color, value. For hint knowledge use getOwnHintKnowledge(obs, slotIndex) and getKnownToHolder(obs, cardId).
 ```

@@ -1,7 +1,8 @@
-import { runGame, calculateScore } from './game-engine';
+import { runGame, calculateScore, executeAction } from './game-engine';
+import { getLegalActionsFromObservation } from './actions';
 import { ExampleStrategy } from '../strategies/example-strategy';
-import { DEFAULT_CONFIG } from '../config';
 import { Color } from './types';
+import { createInitialState } from './game-state';
 
 describe('calculateScore', () => {
   it('sums played stacks up to 25', () => {
@@ -12,13 +13,8 @@ describe('calculateScore', () => {
 
 describe('runGame', () => {
   it('runs to completion with example strategy', () => {
-    const base = new ExampleStrategy(123);
-    const strategies = [base.clone(), base.clone()];
-    strategies[0].initialize(DEFAULT_CONFIG, 0);
-    strategies[1].initialize(DEFAULT_CONFIG, 1);
-    const result = runGame(42, 2, (obs, currentPlayer) =>
-      strategies[currentPlayer].getAction(obs)
-    );
+    const strategy = new ExampleStrategy(123);
+    const result = runGame(42, (obs) => strategy.getAction(obs));
     expect(result.finalState.score).toBeGreaterThanOrEqual(0);
     expect(result.finalState.score).toBeLessThanOrEqual(25);
     expect(['lives_zero', 'max_score', 'deck_empty']).toContain(result.finalState.endReason);
@@ -26,12 +22,39 @@ describe('runGame', () => {
 
   it('is deterministic for same seed', () => {
     const getAction = (obs: import('./observation').Observation): import('./actions').Action => {
-      const actions = obs.legalActions ?? [];
+      const actions = getLegalActionsFromObservation(obs);
       return actions[0] ?? { type: 'discard', cardIndex: 0 };
     };
-    const r1 = runGame(99, 2, (obs, _) => getAction(obs));
-    const r2 = runGame(99, 2, (obs, _) => getAction(obs));
+    const r1 = runGame(99, (obs) => getAction(obs));
+    const r2 = runGame(99, (obs) => getAction(obs));
     expect(r1.finalState.score).toBe(r2.finalState.score);
     expect(r1.finalState.endReason).toBe(r2.finalState.endReason);
+  });
+
+  it('throws when strategy returns invalid action', () => {
+    const state = createInitialState(42);
+    expect(() => {
+      executeAction(state, { type: 'play', cardIndex: 99 });
+    }).toThrow(/Invalid play/);
+  });
+
+  it('hint event includes matchedCardIds', () => {
+    const state = createInitialState(42);
+    const targetHand = state.hands[1];
+    const redCardIndex = targetHand.findIndex((c) => c.color === 0);
+    if (redCardIndex < 0) return;
+    const redCardId = targetHand[redCardIndex].id;
+    executeAction(state, {
+      type: 'hint',
+      targetPlayer: 1,
+      hintType: 'color',
+      hintValue: 0,
+    });
+    const lastEvent = state.actionHistory[state.actionHistory.length - 1];
+    expect(lastEvent.type).toBe('hint');
+    if (lastEvent.type === 'hint') {
+      expect(lastEvent.matchedCardIds).toBeDefined();
+      expect(lastEvent.matchedCardIds).toContain(redCardId);
+    }
   });
 });

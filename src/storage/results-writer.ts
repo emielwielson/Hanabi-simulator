@@ -35,7 +35,7 @@ export function writeResults(
     gameCount: simulationResult.seeds.length,
     strategyTiming,
     config: {
-      playerCount: config.playerCount,
+      playerCount: 2,
       hintTokens: config.hintTokens,
       lifeTokens: config.lifeTokens,
       loggingMode: config.loggingMode,
