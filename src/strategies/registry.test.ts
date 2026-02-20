@@ -13,7 +13,6 @@ describe('getStrategies', () => {
       expect(typeof s.factory).toBe('function');
       const instance = s.factory();
       expect(instance).toHaveProperty('getAction');
-      expect(instance).toHaveProperty('clone');
     }
   });
 });

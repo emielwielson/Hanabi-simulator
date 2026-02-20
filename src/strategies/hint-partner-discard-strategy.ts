@@ -1,7 +1,6 @@
-import { createSeededRNG } from '../engine/seeded-rng';
-import type { GameConfig } from '../config';
 import type { Action } from '../engine/actions';
 import type { HanabiStrategy, Observation } from './types';
+import { getDeterministicRNG } from './observation-rng';
 
 /**
  * HintPartner variant: same position-encoding (hint N = play position N-1, hint playable cards).
@@ -9,31 +8,16 @@ import type { HanabiStrategy, Observation } from './types';
  * When at 8 hints, discard is illegal so we fall back to a random legal action.
  */
 export class HintPartnerDiscardStrategy implements HanabiStrategy {
-  private config: GameConfig | null = null;
-  private seatIndex = 0;
-  private rng: (() => number) | null = null;
-  private rngSeed: number;
+  private readonly rngSeed: number;
 
   constructor(rngSeed = 42) {
     this.rngSeed = rngSeed;
   }
 
-  initialize(config: GameConfig, seatIndex: number): void {
-    this.config = config;
-    this.seatIndex = seatIndex;
-    this.rng = createSeededRNG(this.rngSeed + seatIndex);
-  }
-
-  onGameStart(_observation: Observation): void {
-    // No-op
-  }
-
   getAction(observation: Observation): Action {
-    if (!this.rng) {
-      throw new Error('Strategy not initialized');
-    }
-
     const legalActions = observation.legalActions ?? [];
+    const rng = getDeterministicRNG(observation, this.rngSeed);
+
     if (legalActions.length === 0) {
       if (observation.ownHandSize > 0 && observation.hintsRemaining < 8) {
         return { type: 'discard', cardIndex: 0 };
@@ -41,7 +25,6 @@ export class HintPartnerDiscardStrategy implements HanabiStrategy {
       return { type: 'play', cardIndex: 0 };
     }
 
-    // 1. If we received a hint, play the card at position N-1 (position-encoding)
     const playFromHint = this.getPlayFromHint(observation);
     if (playFromHint !== null) {
       const playAction = legalActions.find(
@@ -50,7 +33,6 @@ export class HintPartnerDiscardStrategy implements HanabiStrategy {
       if (playAction) return { ...playAction };
     }
 
-    // 2. If partner has a playable card, hint it
     const hintAction = this.getHintForPlayableCard(observation);
     if (hintAction !== null && hintAction.type === 'hint') {
       const hintLegal = legalActions.find(
@@ -63,7 +45,6 @@ export class HintPartnerDiscardStrategy implements HanabiStrategy {
       if (hintLegal) return { ...hintLegal };
     }
 
-    // 3. Prefer discard leftmost (index 0); if 8 hints discard is illegal
     if (observation.hintsRemaining < 8) {
       const discardLeft = legalActions.find(
         (a) => a.type === 'discard' && a.cardIndex === 0
@@ -71,19 +52,17 @@ export class HintPartnerDiscardStrategy implements HanabiStrategy {
       if (discardLeft) return { ...discardLeft };
     }
 
-    // 4. At 8 hints: give a random color hint (to burn a hint token)
     if (observation.hintsRemaining >= 8) {
       const colorHintActions = legalActions.filter(
         (a) => a.type === 'hint' && a.hintType === 'color'
       );
       if (colorHintActions.length > 0) {
-        const idx = Math.floor(this.rng() * colorHintActions.length);
+        const idx = Math.floor(rng() * colorHintActions.length);
         return { ...colorHintActions[idx] };
       }
     }
 
-    // 5. Random legal action (fallback)
-    const idx = Math.floor(this.rng() * legalActions.length);
+    const idx = Math.floor(rng() * legalActions.length);
     return { ...legalActions[idx] };
   }
 
@@ -136,17 +115,5 @@ export class HintPartnerDiscardStrategy implements HanabiStrategy {
       }
     }
     return null;
-  }
-
-  onActionResolved(_event: import('../engine/events').GameEvent): void {
-    // No-op
-  }
-
-  onGameEnd(_result: import('../engine/events').FinalState): void {
-    // No-op
-  }
-
-  clone(): HanabiStrategy {
-    return new HintPartnerDiscardStrategy(this.rngSeed);
   }
 }

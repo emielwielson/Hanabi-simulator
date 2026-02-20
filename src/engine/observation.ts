@@ -3,6 +3,7 @@ import { getLegalActions } from './actions';
 import type { Card, Color } from './types';
 import type { GameEvent } from './events';
 import type { GameState } from './game-state';
+import { PLAYER_COUNT } from './game-state';
 
 /**
  * Card in another player's hand. In standard Hanabi, you see all other players' cards.
@@ -26,6 +27,8 @@ export interface OwnSlotKnowledge {
 export interface Observation {
   currentPlayer: number;
   selfSeat: number;
+  /** Game seed for deterministic RNG in stateless strategies. */
+  gameSeed?: number;
   visibleHands: Record<number, VisibleCard[]>;
   ownHandSize: number;
   /** Per-slot hint knowledge for own hand (index = slot). */
@@ -54,6 +57,7 @@ export function deepCopyObservation(obs: Observation): Observation {
   return {
     currentPlayer: obs.currentPlayer,
     selfSeat: obs.selfSeat,
+    gameSeed: obs.gameSeed,
     visibleHands,
     ownHandSize: obs.ownHandSize,
     ownHintKnowledge,
@@ -67,15 +71,23 @@ export function deepCopyObservation(obs: Observation): Observation {
   };
 }
 
+export interface BuildObservationOptions {
+  gameSeed?: number;
+}
+
 /**
  * Builds Observation for a given seat from GameState. Includes only legal info (FR-9).
  * In standard Hanabi, you see all other players' cards but not your own. visibleHands
  * therefore shows full color/value for all partner cards.
  * Does NOT include own cards. Uses deepCopy equivalent for nested structures.
  */
-export function buildObservation(state: GameState, seatIndex: number): Observation {
+export function buildObservation(
+  state: GameState,
+  seatIndex: number,
+  options?: BuildObservationOptions
+): Observation {
   const visibleHands: Record<number, VisibleCard[]> = {};
-  for (let p = 0; p < state.playerCount; p++) {
+  for (let p = 0; p < PLAYER_COUNT; p++) {
     if (p === seatIndex) continue;
     const hand = state.hands[p];
     visibleHands[p] = hand.map((card) => ({
@@ -94,6 +106,7 @@ export function buildObservation(state: GameState, seatIndex: number): Observati
   const obs: Observation = {
     currentPlayer: state.currentPlayer,
     selfSeat: seatIndex,
+    gameSeed: options?.gameSeed,
     visibleHands,
     ownHandSize: ownHand.length,
     ownHintKnowledge,

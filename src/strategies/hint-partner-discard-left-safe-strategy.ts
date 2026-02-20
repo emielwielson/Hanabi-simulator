@@ -1,9 +1,8 @@
-import { createSeededRNG } from '../engine/seeded-rng';
-import type { GameConfig } from '../config';
 import type { Action } from '../engine/actions';
 import type { HanabiStrategy, Observation } from './types';
 import type { Color } from '../engine/types';
 import { DECK_COMPOSITION } from '../engine/types';
+import { getDeterministicRNG } from './observation-rng';
 
 /**
  * HintPartner_discard variant with safe discard: we discard from left to right (leftmost first).
@@ -12,32 +11,16 @@ import { DECK_COMPOSITION } from '../engine/types';
  * card to the right of it (index 1) instead.
  */
 export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
-  private config: GameConfig | null = null;
-  private seatIndex = 0;
-  private rng: (() => number) | null = null;
-  private rngSeed: number;
+  private readonly rngSeed: number;
 
   constructor(rngSeed = 42) {
     this.rngSeed = rngSeed;
   }
 
-  initialize(config: GameConfig, seatIndex: number): void {
-    this.config = config;
-    this.seatIndex = seatIndex;
-    this.rng = createSeededRNG(this.rngSeed + seatIndex);
-  }
-
-  onGameStart(_observation: Observation): void {
-    // No-op
-  }
-
   getAction(observation: Observation): Action {
-    if (!this.rng) {
-      throw new Error('Strategy not initialized');
-    }
-
     const legalActions = observation.legalActions ?? [];
     const leftmostIndex = 0;
+    const rng = getDeterministicRNG(observation, this.rngSeed);
 
     if (legalActions.length === 0) {
       if (observation.ownHandSize > 0 && observation.hintsRemaining < 8) {
@@ -46,7 +29,6 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
       return { type: 'play', cardIndex: 0 };
     }
 
-    // 1. If we received a hint, play the card at position N-1 (position-encoding)
     const playFromHint = this.getPlayFromHint(observation);
     if (playFromHint !== null) {
       const playAction = legalActions.find(
@@ -55,7 +37,6 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
       if (playAction) return { ...playAction };
     }
 
-    // 2. If partner has a playable card, hint it
     const hintAction = this.getHintForPlayableCard(observation);
     if (hintAction !== null && hintAction.type === 'hint') {
       const hintLegal = legalActions.find(
@@ -68,7 +49,6 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
       if (hintLegal) return { ...hintLegal };
     }
 
-    // 3. Prefer discard leftmost (discard from left to right); if that card is known and the only copy left, or we know it's a 5 (only one per color), discard the one to the right of it instead
     if (observation.hintsRemaining < 8) {
       const knowledge = observation.ownHintKnowledge?.[leftmostIndex];
       const color = knowledge?.color;
@@ -94,26 +74,20 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
       if (discardAction) return { ...discardAction };
     }
 
-    // 4. At 8 hints: give a random color hint (to burn a hint token)
     if (observation.hintsRemaining >= 8) {
       const colorHintActions = legalActions.filter(
         (a) => a.type === 'hint' && a.hintType === 'color'
       );
       if (colorHintActions.length > 0) {
-        const idx = Math.floor(this.rng() * colorHintActions.length);
+        const idx = Math.floor(rng() * colorHintActions.length);
         return { ...colorHintActions[idx] };
       }
     }
 
-    // 5. Random legal action (fallback)
-    const idx = Math.floor(this.rng() * legalActions.length);
+    const idx = Math.floor(rng() * legalActions.length);
     return { ...legalActions[idx] };
   }
 
-  /**
-   * Returns true if (color, value) is the only copy left (excluding our hand).
-   * Used to avoid discarding the last copy of a card we need.
-   */
   private isOnlyCopyLeft(
     observation: Observation,
     color: Color,
@@ -185,17 +159,5 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
       }
     }
     return null;
-  }
-
-  onActionResolved(_event: import('../engine/events').GameEvent): void {
-    // No-op
-  }
-
-  onGameEnd(_result: import('../engine/events').FinalState): void {
-    // No-op
-  }
-
-  clone(): HanabiStrategy {
-    return new HintPartnerDiscardLeftSafeStrategy(this.rngSeed);
   }
 }

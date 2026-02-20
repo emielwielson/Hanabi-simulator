@@ -56,31 +56,18 @@ function countMislays(events: GameEvent[]): number {
 export function runSingleGame(
   seed: number,
   config: GameConfig,
-  strategyClones: HanabiStrategy[],
+  strategy: HanabiStrategy,
   options: { collectTrace: boolean; decisionTimes: number[] }
 ): { finalState: FinalState; events: GameEvent[]; metrics: PerGameMetrics; trace?: GameTrace } {
-  const state = createInitialState(
-    seed,
-    config.playerCount,
-    config.hintTokens,
-    config.lifeTokens
-  );
-
-  for (let seat = 0; seat < config.playerCount; seat++) {
-    const obs = buildObservation(state, seat);
-    strategyClones[seat].onGameStart(obs);
-  }
+  const state = createInitialState(seed, config.hintTokens, config.lifeTokens);
 
   while (!state.gameOver) {
-    const obs = buildObservation(state, state.currentPlayer);
+    const obs = buildObservation(state, state.currentPlayer, { gameSeed: seed });
     const t0 = performance.now();
-    const action = strategyClones[state.currentPlayer].getAction(obs);
+    const action = strategy.getAction(obs);
     const t1 = performance.now();
     options.decisionTimes.push(t1 - t0);
-    const event = executeAction(state, action);
-    for (const s of strategyClones) {
-      s.onActionResolved(event);
-    }
+    executeAction(state, action);
   }
 
   const finalState: FinalState = {
@@ -91,10 +78,6 @@ export function runSingleGame(
     playedStacks: { ...state.playedStacks },
     discardPile: [...state.discardPile],
   };
-
-  for (const s of strategyClones) {
-    s.onGameEnd(finalState);
-  }
 
   const metrics: PerGameMetrics = {
     score: finalState.score,
@@ -144,15 +127,7 @@ export function runSimulation(
     const t0 = performance.now();
 
     for (const seed of seeds) {
-      const clones: HanabiStrategy[] = Array.from(
-        { length: config.playerCount },
-        () => base.clone()
-      );
-      for (let i = 0; i < clones.length; i++) {
-        clones[i].initialize(config, i);
-      }
-
-      const { metrics, trace } = runSingleGame(seed, config, clones, {
+      const { metrics, trace } = runSingleGame(seed, config, base, {
         collectTrace,
         decisionTimes,
       });

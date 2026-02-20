@@ -1,5 +1,6 @@
 import { Color, COLORS } from './types';
 import type { GameState } from './game-state';
+import { PLAYER_COUNT } from './game-state';
 
 export type PlayAction = {
   type: 'play';
@@ -48,7 +49,7 @@ export function validateAction(state: GameState, action: Action): string | null 
     if (action.targetPlayer === state.currentPlayer) {
       return 'Cannot hint: cannot hint yourself';
     }
-    if (action.targetPlayer < 0 || action.targetPlayer >= state.playerCount) {
+    if (action.targetPlayer < 0 || action.targetPlayer >= PLAYER_COUNT) {
       return `Invalid hint: targetPlayer ${action.targetPlayer} out of range`;
     }
     const targetHand = state.hands[action.targetPlayer];
@@ -88,7 +89,7 @@ export function getLegalActions(state: GameState, seatIndex: number): Action[] {
     }
   }
   if (state.hintTokens > 0) {
-    for (let target = 0; target < state.playerCount; target++) {
+    for (let target = 0; target < PLAYER_COUNT; target++) {
       if (target === seatIndex) continue;
       const targetHand = state.hands[target];
       for (const color of COLORS) {

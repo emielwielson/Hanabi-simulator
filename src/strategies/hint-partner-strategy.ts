@@ -1,8 +1,6 @@
-import { createSeededRNG } from '../engine/seeded-rng';
-import type { GameConfig } from '../config';
 import type { Action } from '../engine/actions';
 import type { HanabiStrategy, Observation } from './types';
-import type { VisibleCard } from '../engine/observation';
+import { getDeterministicRandom } from './observation-rng';
 
 /**
  * Strategy using position-encoding convention:
@@ -12,30 +10,13 @@ import type { VisibleCard } from '../engine/observation';
  * - Other moves: random
  */
 export class HintPartnerStrategy implements HanabiStrategy {
-  private config: GameConfig | null = null;
-  private seatIndex = 0;
-  private rng: (() => number) | null = null;
-  private rngSeed: number;
+  private readonly rngSeed: number;
 
   constructor(rngSeed = 42) {
     this.rngSeed = rngSeed;
   }
 
-  initialize(config: GameConfig, seatIndex: number): void {
-    this.config = config;
-    this.seatIndex = seatIndex;
-    this.rng = createSeededRNG(this.rngSeed + seatIndex);
-  }
-
-  onGameStart(_observation: Observation): void {
-    // No-op
-  }
-
   getAction(observation: Observation): Action {
-    if (!this.rng) {
-      throw new Error('Strategy not initialized');
-    }
-
     const legalActions = observation.legalActions ?? [];
     if (legalActions.length === 0) {
       if (observation.ownHandSize > 0 && observation.hintsRemaining < 8) {
@@ -44,7 +25,6 @@ export class HintPartnerStrategy implements HanabiStrategy {
       return { type: 'play', cardIndex: 0 };
     }
 
-    // 1. If we received a hint, play the card at position N-1 (position-encoding)
     const playFromHint = this.getPlayFromHint(observation);
     if (playFromHint !== null) {
       const playAction = legalActions.find(
@@ -53,7 +33,6 @@ export class HintPartnerStrategy implements HanabiStrategy {
       if (playAction) return { ...playAction };
     }
 
-    // 2. If partner has a playable card, hint it
     const hintAction = this.getHintForPlayableCard(observation);
     if (hintAction !== null && hintAction.type === 'hint') {
       const hintLegal = legalActions.find(
@@ -66,15 +45,11 @@ export class HintPartnerStrategy implements HanabiStrategy {
       if (hintLegal) return { ...hintLegal };
     }
 
-    // 3. Random legal action
-    const idx = Math.floor(this.rng() * legalActions.length);
+    const rng = getDeterministicRandom(observation, this.rngSeed);
+    const idx = Math.floor(rng * legalActions.length);
     return { ...legalActions[idx] };
   }
 
-  /**
-   * Returns the card index to play if we received a hint we haven't acted on yet.
-   * Position-encoding: hint value N means play position N-1 (0-based).
-   */
   private getPlayFromHint(observation: Observation): number | null {
     for (let i = observation.actionHistory.length - 1; i >= 0; i--) {
       const ev = observation.actionHistory[i];
@@ -97,10 +72,6 @@ export class HintPartnerStrategy implements HanabiStrategy {
     return null;
   }
 
-  /**
-   * Position-encoding: hint value N means "position N-1 is playable".
-   * Hints 1-5 are always legal regardless of card values.
-   */
   private getHintForPlayableCard(observation: Observation): Action | null {
     if (observation.hintsRemaining <= 0) return null;
 
@@ -128,17 +99,5 @@ export class HintPartnerStrategy implements HanabiStrategy {
       }
     }
     return null;
-  }
-
-  onActionResolved(_event: import('../engine/events').GameEvent): void {
-    // No-op
-  }
-
-  onGameEnd(_result: import('../engine/events').FinalState): void {
-    // No-op
-  }
-
-  clone(): HanabiStrategy {
-    return new HintPartnerStrategy(this.rngSeed);
   }
 }
