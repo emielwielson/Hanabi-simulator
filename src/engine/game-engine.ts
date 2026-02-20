@@ -183,7 +183,7 @@ export function runGame(
   const state = createInitialState(seed);
 
   while (!state.gameOver) {
-    const obs = buildObservation(state, state.currentPlayer, { gameSeed: seed });
+    const obs = buildObservation(state, state.currentPlayer);
     const action = getAction(obs);
     executeAction(state, action);
   }

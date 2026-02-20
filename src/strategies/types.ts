@@ -5,7 +5,7 @@ export type { Observation };
 export type { VisibleCard } from '../engine/observation';
 
 /**
- * Strategy interface: state in, action out. Stateless; all context (e.g. gameSeed) is in the observation; use getSelfSeat(observation) for own seat.
+ * Strategy interface: state in, action out. Stateless; all context is in the observation; use getSelfSeat(observation) for own seat.
  */
 export interface HanabiStrategy {
   getAction(observation: Observation): Action;

@@ -7,12 +7,7 @@ function seedFromObservation(observation: Observation, baseSeed: number): number
   const turnIndex = observation.actionHistory.filter(
     (e) => e.playerIndex === selfSeat
   ).length;
-  return (
-    baseSeed +
-    (observation.gameSeed ?? 0) +
-    selfSeat * 10000 +
-    turnIndex
-  );
+  return baseSeed + selfSeat * 10000 + turnIndex;
 }
 
 /**

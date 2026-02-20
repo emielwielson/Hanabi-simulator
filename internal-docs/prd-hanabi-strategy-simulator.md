@@ -297,7 +297,6 @@ type Observation = {
   playedStacks: Record<Color, number>
   deckCount: number
   actionHistory: GameEvent[]
-  // optional: gameSeed
 }
 // Observer's seat: getSelfSeat(observation). Legal actions: getLegalActionsFromObservation(obs); validate: validateActionForObservation(obs, action).
 // VisibleCard: cardId, color?, value?, knownToHolder? (hint knowledge that the card's holder has for that card).

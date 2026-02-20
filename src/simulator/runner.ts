@@ -62,7 +62,7 @@ export function runSingleGame(
   const state = createInitialState(seed, config.hintTokens, config.lifeTokens);
 
   while (!state.gameOver) {
-    const obs = buildObservation(state, state.currentPlayer, { gameSeed: seed });
+    const obs = buildObservation(state, state.currentPlayer);
     const t0 = performance.now();
     const action = strategy.getAction(obs);
     const t1 = performance.now();

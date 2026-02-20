@@ -5,7 +5,6 @@ import { runSimulation } from '../simulator/runner';
 
 function createMockObservation(overrides: Partial<Observation> = {}): Observation {
   return {
-    gameSeed: 0,
     visibleHands: { 1: [] },
     ownHandSize: 5,
     ownHintKnowledge: [{}, {}, {}, {}, {}],
@@ -22,7 +21,7 @@ function createMockObservation(overrides: Partial<Observation> = {}): Observatio
 describe('HintPartnerStrategy', () => {
   it('implements HanabiStrategy and getAction returns an action', () => {
     const strategy = new HintPartnerStrategy(123);
-    const obs = createMockObservation({ gameSeed: 1 });
+    const obs = createMockObservation();
     const action = strategy.getAction(obs);
     expect(action).toBeDefined();
     expect(['play', 'discard', 'hint']).toContain(action.type);

@@ -34,8 +34,6 @@ export interface OwnSlotKnowledge {
 }
 
 export interface Observation {
-  /** Game seed for deterministic RNG in stateless strategies. */
-  gameSeed?: number;
   visibleHands: Record<number, VisibleCard[]>;
   ownHandSize: number;
   /** Per-slot hint knowledge for own hand (index = slot). */
@@ -63,7 +61,6 @@ export function deepCopyObservation(obs: Observation): Observation {
   const playedStacks: Record<number, number> = { ...obs.playedStacks };
   const ownHintKnowledge = obs.ownHintKnowledge.map((s) => ({ ...s }));
   return {
-    gameSeed: obs.gameSeed,
     visibleHands,
     ownHandSize: obs.ownHandSize,
     ownHintKnowledge,
@@ -88,9 +85,7 @@ export function getSelfSeat(observation: Observation): number {
   throw new Error('getSelfSeat: no missing seat in visibleHands');
 }
 
-export interface BuildObservationOptions {
-  gameSeed?: number;
-}
+export interface BuildObservationOptions {}
 
 /**
  * Builds Observation for a given seat from GameState. Includes only legal info (FR-9).
@@ -125,7 +120,6 @@ export function buildObservation(
   });
 
   const obs: Observation = {
-    gameSeed: options?.gameSeed,
     visibleHands,
     ownHandSize: ownHand.length,
     ownHintKnowledge,
