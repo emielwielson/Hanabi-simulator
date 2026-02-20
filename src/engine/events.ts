@@ -22,6 +22,8 @@ export type HintEvent = {
   hintType: 'color' | 'number';
   hintValue: Color | number;
   matchedCardIndices: number[];
+  /** Card IDs that received the hint (same order as matchedCardIndices). */
+  matchedCardIds: number[];
 };
 
 export type GameEvent = PlayEvent | DiscardEvent | HintEvent;

@@ -65,7 +65,7 @@ Based on: [prd-hanabi-strategy-simulator.md](./prd-hanabi-strategy-simulator.md)
 
 - [ ] 3.0 Strategy system & observation model
   - [ ] 3.1 Define `HanabiStrategy` interface: `initialize`, `onGameStart`, `getAction`, `onActionResolved`, `onGameEnd`, `clone`
-  - [ ] 3.2 Define `Observation` type with all required fields (visibleHands, ownHandSize, hintsRemaining, livesRemaining, discardPile, playedStacks, deckCount, actionHistory); no legalActions; provide getSelfSeat(observation), validateActionForObservation(obs, action), getLegalActionsFromObservation(obs)
+  - [ ] 3.2 Define `Observation` type with all required fields (visibleHands, ownHandSize, ownCardIds, hintsRemaining, livesRemaining, discardPile, playedStacks, deckCount, actionHistory); no legalActions; provide getSelfSeat(observation), validateActionForObservation(obs, action), getLegalActionsFromObservation(obs), getOwnHintKnowledge/getKnownToHolder from observation-knowledge
   - [ ] 3.3 Define `VisibleCard` type: cards in other hands with color/number only where hinted
   - [ ] 3.4 Define `GameEvent`, `FinalState` types for strategy callbacks
   - [ ] 3.5 Implement deep-copy of Observation before passing to `getAction` (no mutation leakage)

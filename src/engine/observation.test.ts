@@ -7,7 +7,7 @@ describe('getSelfSeat', () => {
     const obs: Observation = {
       visibleHands: { 1: [{ cardId: 10 }] },
       ownHandSize: 5,
-      ownHintKnowledge: [],
+      ownCardIds: [1, 2, 3, 4, 5],
       hintsRemaining: 8,
       livesRemaining: 3,
       discardPile: [],
@@ -29,7 +29,7 @@ describe('deepCopyObservation', () => {
     const obs: Observation = {
       visibleHands,
       ownHandSize: 5,
-      ownHintKnowledge: [{}, {}, {}, {}, {}],
+      ownCardIds: [10, 11, 12, 13, 14],
       hintsRemaining: 8,
       livesRemaining: 3,
       discardPile,
@@ -44,45 +44,26 @@ describe('deepCopyObservation', () => {
     expect(copy.discardPile).not.toBe(obs.discardPile);
     expect(copy.actionHistory).not.toBe(obs.actionHistory);
     expect(copy.playedStacks).not.toBe(obs.playedStacks);
-  });
-
-  it('copies knownToHolder and does not share array references', () => {
-    const obs: Observation = {
-      visibleHands: {
-        1: [
-          { cardId: 10, knownToHolder: { color: 0, excludedColors: [1, 2] } },
-        ],
-      },
-      ownHandSize: 5,
-      ownHintKnowledge: [],
-      hintsRemaining: 8,
-      livesRemaining: 3,
-      discardPile: [],
-      playedStacks: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 },
-      deckCount: 35,
-      actionHistory: [],
-    };
-    const copy = deepCopyObservation(obs);
-    expect(copy.visibleHands[1][0].knownToHolder).toEqual({
-      color: 0,
-      excludedColors: [1, 2],
-    });
-    expect(copy.visibleHands[1][0].knownToHolder).not.toBe(obs.visibleHands[1][0].knownToHolder);
-    expect(copy.visibleHands[1][0].knownToHolder!.excludedColors).not.toBe(
-      obs.visibleHands[1][0].knownToHolder!.excludedColors
-    );
+    expect(copy.ownCardIds).not.toBe(obs.ownCardIds);
+    expect(copy.ownCardIds).toEqual(obs.ownCardIds);
   });
 });
 
 describe('buildObservation', () => {
-  it('sets knownToHolder on visible cards when state has hint knowledge for them', () => {
+  it('sets ownCardIds with card IDs for the observer hand', () => {
     const state = createInitialState(99);
-    const partnerCard = state.hands[1][0];
-    state.hintKnowledge.set(partnerCard.id, { color: 0, value: 1 });
     const obs = buildObservation(state, 0);
-    const visiblePartnerHand = obs.visibleHands[1];
-    expect(visiblePartnerHand.length).toBeGreaterThan(0);
-    const firstCard = visiblePartnerHand[0];
-    expect(firstCard.knownToHolder).toEqual({ color: 0, value: 1 });
+    expect(obs.ownCardIds).toHaveLength(obs.ownHandSize);
+    expect(obs.ownCardIds).toEqual(state.hands[0].map((c) => c.id));
+  });
+
+  it('visible cards are cardId, color, value only (knowledge via getKnownToHolder)', () => {
+    const state = createInitialState(99);
+    const obs = buildObservation(state, 0);
+    for (const cards of Object.values(obs.visibleHands)) {
+      for (const card of cards) {
+        expect(Object.keys(card).sort()).toEqual(['cardId', 'color', 'value']);
+      }
+    }
   });
 });

@@ -37,4 +37,24 @@ describe('runGame', () => {
       executeAction(state, { type: 'play', cardIndex: 99 });
     }).toThrow(/Invalid play/);
   });
+
+  it('hint event includes matchedCardIds', () => {
+    const state = createInitialState(42);
+    const targetHand = state.hands[1];
+    const redCardIndex = targetHand.findIndex((c) => c.color === 0);
+    if (redCardIndex < 0) return;
+    const redCardId = targetHand[redCardIndex].id;
+    executeAction(state, {
+      type: 'hint',
+      targetPlayer: 1,
+      hintType: 'color',
+      hintValue: 0,
+    });
+    const lastEvent = state.actionHistory[state.actionHistory.length - 1];
+    expect(lastEvent.type).toBe('hint');
+    if (lastEvent.type === 'hint') {
+      expect(lastEvent.matchedCardIds).toBeDefined();
+      expect(lastEvent.matchedCardIds).toContain(redCardId);
+    }
+  });
 });

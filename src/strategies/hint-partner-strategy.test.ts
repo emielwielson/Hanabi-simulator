@@ -7,7 +7,7 @@ function createMockObservation(overrides: Partial<Observation> = {}): Observatio
   return {
     visibleHands: { 1: [] },
     ownHandSize: 5,
-    ownHintKnowledge: [{}, {}, {}, {}, {}],
+    ownCardIds: [1, 2, 3, 4, 5],
     hintsRemaining: 8,
     livesRemaining: 3,
     discardPile: [],

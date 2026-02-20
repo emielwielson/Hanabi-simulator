@@ -1,43 +1,27 @@
 import type { Card, Color } from './types';
 import type { GameEvent } from './events';
-import type { GameState, HintKnowledge } from './game-state';
+import type { GameState } from './game-state';
 import { PLAYER_COUNT } from './game-state';
 
 /**
  * Card in another player's hand. In standard Hanabi, you see all other players' cards.
- * knownToHolder is what that player has been told about this card (from hints / option removal).
+ * Use getKnownToHolder(observation, cardId) to derive what that player has been told about this card.
  */
 export interface VisibleCard {
   cardId: number;
   color?: Color;
   value?: number;
-  /** Hint knowledge that the card's holder has for this card. */
-  knownToHolder?: HintKnowledge;
-}
-
-function copyHintKnowledge(k: HintKnowledge): HintKnowledge {
-  return {
-    color: k.color,
-    value: k.value,
-    excludedColors: k.excludedColors?.slice(),
-    excludedValues: k.excludedValues?.slice(),
-  };
 }
 
 /**
  * Observation passed to strategies. Engine must deep-copy before passing (FR-14).
+ * Use getOwnHintKnowledge(observation, slotIndex) and getKnownToHolder(observation, cardId) for hint knowledge.
  */
-/** Known color/value for one slot of own hand (from hints). */
-export interface OwnSlotKnowledge {
-  color?: Color;
-  value?: number;
-}
-
 export interface Observation {
   visibleHands: Record<number, VisibleCard[]>;
   ownHandSize: number;
-  /** Per-slot hint knowledge for own hand (index = slot). */
-  ownHintKnowledge: OwnSlotKnowledge[];
+  /** Card IDs in the observer's hand by slot index; use with actionHistory to derive per-slot hint knowledge. */
+  ownCardIds: number[];
   hintsRemaining: number;
   livesRemaining: number;
   discardPile: Card[];
@@ -53,17 +37,13 @@ export interface Observation {
 export function deepCopyObservation(obs: Observation): Observation {
   const visibleHands: Record<number, VisibleCard[]> = {};
   for (const [seat, cards] of Object.entries(obs.visibleHands)) {
-    visibleHands[Number(seat)] = cards.map((c) => ({
-      ...c,
-      knownToHolder: c.knownToHolder ? copyHintKnowledge(c.knownToHolder) : undefined,
-    }));
+    visibleHands[Number(seat)] = cards.map((c) => ({ ...c }));
   }
   const playedStacks: Record<number, number> = { ...obs.playedStacks };
-  const ownHintKnowledge = obs.ownHintKnowledge.map((s) => ({ ...s }));
   return {
     visibleHands,
     ownHandSize: obs.ownHandSize,
-    ownHintKnowledge,
+    ownCardIds: [...obs.ownCardIds],
     hintsRemaining: obs.hintsRemaining,
     livesRemaining: obs.livesRemaining,
     discardPile: obs.discardPile.map((c) => ({ ...c })),
@@ -102,27 +82,20 @@ export function buildObservation(
   for (let p = 0; p < PLAYER_COUNT; p++) {
     if (p === seatIndex) continue;
     const hand = state.hands[p];
-    visibleHands[p] = hand.map((card) => {
-      const k = state.hintKnowledge.get(card.id);
-      return {
-        cardId: card.id,
-        color: card.color,
-        value: card.value,
-        ...(k && { knownToHolder: copyHintKnowledge(k) }),
-      };
-    });
+    visibleHands[p] = hand.map((card) => ({
+      cardId: card.id,
+      color: card.color,
+      value: card.value,
+    }));
   }
 
   const ownHand = state.hands[seatIndex];
-  const ownHintKnowledge: OwnSlotKnowledge[] = ownHand.map((card) => {
-    const k = state.hintKnowledge.get(card.id);
-    return { color: k?.color, value: k?.value };
-  });
+  const ownCardIds = ownHand.map((c) => c.id);
 
   const obs: Observation = {
     visibleHands,
     ownHandSize: ownHand.length,
-    ownHintKnowledge,
+    ownCardIds,
     hintsRemaining: state.hintTokens,
     livesRemaining: state.lifeTokens,
     discardPile: state.discardPile.map((c) => ({ ...c })),

@@ -102,6 +102,7 @@ export function executeAction(state: GameState, action: Action): GameEvent {
     state.hintTokens--;
     const targetHand = state.hands[action.targetPlayer];
     const matchedCardIndices: number[] = [];
+    const matchedCardIds: number[] = [];
     targetHand.forEach((card, idx) => {
       const matches =
         action.hintType === 'color'
@@ -109,6 +110,7 @@ export function executeAction(state: GameState, action: Action): GameEvent {
           : card.value === action.hintValue;
       if (matches) {
         matchedCardIndices.push(idx);
+        matchedCardIds.push(card.id);
         const known = state.hintKnowledge.get(card.id) ?? {};
         if (action.hintType === 'color') {
           known.color = action.hintValue as Color;
@@ -147,6 +149,7 @@ export function executeAction(state: GameState, action: Action): GameEvent {
       hintType: action.hintType,
       hintValue: action.hintValue,
       matchedCardIndices,
+      matchedCardIds,
     };
   }
 

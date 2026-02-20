@@ -1,6 +1,7 @@
 import type { Action } from '../engine/actions';
 import { getLegalActionsFromObservation } from '../engine/actions';
 import { getSelfSeat } from '../engine/observation';
+import { getOwnHintKnowledge } from './observation-knowledge';
 import type { HanabiStrategy, Observation } from './types';
 import type { Color } from '../engine/types';
 import { DECK_COMPOSITION } from '../engine/types';
@@ -52,7 +53,7 @@ export class HintPartnerDiscardRightSafeStrategy implements HanabiStrategy {
     }
 
     if (observation.hintsRemaining < 8) {
-      const knowledge = observation.ownHintKnowledge?.[rightmostIndex];
+      const knowledge = getOwnHintKnowledge(observation, rightmostIndex);
       const color = knowledge?.color;
       const value = knowledge?.value;
       let discardIndex = rightmostIndex;
