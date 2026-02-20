@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NN training – loss & learning rate</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1rem; }
+    h1 { margin-bottom: 0.5rem; }
+    .meta { color: #666; margin-bottom: 1rem; }
+    .dashboard {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      max-width: 100%;
+    }
+    .main-chart-wrap { flex: 1; min-width: 0; }
+    #chart { max-height: 70vh; }
+    .lr-chart-wrap {
+      flex-shrink: 0;
+      width: 220px;
+      height: 120px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .lr-chart-wrap canvas { display: block; width: 100% !important; height: 100% !important; }
+  </style>
+</head>
+<body>
+  <h1>Training loss (25 − score)</h1>
+  <p class="meta">X = game index. Y = loss per game. Learning rate in separate panel (top right). Refresh page to reconnect.</p>
+  <div class="dashboard">
+    <div class="main-chart-wrap">
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="lr-chart-wrap" aria-label="Learning rate">
+      <canvas id="lrChart"></canvas>
+    </div>
+  </div>
+  <script>
+    const ctx = document.getElementById('chart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Loss (25 − score)',
+          data: [],
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+          fill: true,
+          tension: 0.1,
+          pointRadius: 0,
+          pointHoverRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: { title: { display: true, text: 'Game' }, adapters: {} },
+          y: { title: { display: true, text: 'Loss' }, beginAtZero: true, suggestedMin: 0 }
+        },
+        plugins: { legend: { display: true } }
+      }
+    });
+
+    const lrCtx = document.getElementById('lrChart').getContext('2d');
+    const lrChart = new Chart(lrCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Learning rate',
+          data: [],
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.15)',
+          fill: true,
+          tension: 0.1,
+          pointRadius: 0,
+          pointHoverRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { display: true, ticks: { maxTicksLimit: 5 } },
+          y: { beginAtZero: true, suggestedMin: 0, ticks: { maxTicksLimit: 4 } }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    function poll() {
+      fetch('/api/stats')
+        .then(r => r.json())
+        .then(({ history }) => {
+          if (!history || !history.length) return;
+          const labels = history.map(d => d.game);
+          chart.data.labels = labels;
+          chart.data.datasets[0].data = history.map(d => d.loss);
+          chart.update('none');
+          lrChart.data.labels = labels;
+          lrChart.data.datasets[0].data = history.map(d => d.learningRate ?? 0);
+          lrChart.update('none');
+        })
+        .catch(() => {});
+    }
+    poll();
+    setInterval(poll, 1000);
+  </script>
+</body>
+</html>
