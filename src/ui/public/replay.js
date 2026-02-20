@@ -77,13 +77,35 @@ function buildReplaySteps(trace, config) {
     } else if (ev.type === 'hint') {
       state.hintTokens--;
       const targetHand = state.hands[ev.targetPlayer];
-      for (const idx of ev.matchedCardIndices) {
+      const matchedSet = new Set(ev.matchedCardIndices ?? []);
+      for (let idx = 0; idx < targetHand.length; idx++) {
         const card = targetHand[idx];
         if (!card) continue;
         const known = state.hintKnowledge.get(card.id) ?? {};
-        if (ev.hintType === 'color') known.color = ev.hintValue;
-        else known.value = ev.hintValue;
-        state.hintKnowledge.set(card.id, known);
+        if (matchedSet.has(idx)) {
+          if (ev.hintType === 'color') known.color = ev.hintValue;
+          else known.value = ev.hintValue;
+          state.hintKnowledge.set(card.id, known);
+        } else {
+          // Option removal: cards that don't match can no longer be that color/number
+          if (ev.hintType === 'color') {
+            if (known.color === undefined) {
+              const excluded = known.excludedColors ?? [];
+              if (!excluded.includes(ev.hintValue)) {
+                known.excludedColors = [...excluded, ev.hintValue];
+                state.hintKnowledge.set(card.id, known);
+              }
+            }
+          } else {
+            if (known.value === undefined) {
+              const excluded = known.excludedValues ?? [];
+              if (!excluded.includes(ev.hintValue)) {
+                known.excludedValues = [...excluded, ev.hintValue];
+                state.hintKnowledge.set(card.id, known);
+              }
+            }
+          }
+        }
       }
     }
     state.currentPlayer = advancePlayer(state.currentPlayer, playerCount);
@@ -96,7 +118,11 @@ function buildReplaySteps(trace, config) {
 function deepCopyState(s) {
   const hintKnowledge = new Map();
   for (const [k, v] of s.hintKnowledge) {
-    hintKnowledge.set(k, { ...v });
+    hintKnowledge.set(k, {
+      ...v,
+      excludedColors: v.excludedColors ? [...v.excludedColors] : undefined,
+      excludedValues: v.excludedValues ? [...v.excludedValues] : undefined,
+    });
   }
   return {
     hands: s.hands.map((h) => h.map((c) => ({ ...c }))),
@@ -159,18 +185,22 @@ function renderReplayTokens(hintTokens, lifeTokens, maxHints, maxLives) {
   return html;
 }
 
+const ALL_COLORS = [0, 1, 2, 3, 4];
+const ALL_VALUES = [1, 2, 3, 4, 5];
+
 /**
  * For a card and its hint knowledge, return which colors and numbers are still possible.
- * When we know color/value from a hint, only that one is possible; others disappear.
+ * Known color/value from a hint: only that one is possible.
+ * Option removal: excluded colors/values (from non-matching cards when a hint was given) are removed.
  */
 function getPossibleHints(card, hintKnowledge) {
   const known = hintKnowledge.get(card.id) ?? {};
   const possibleColors = known.color !== undefined
     ? [known.color]
-    : [0, 1, 2, 3, 4];
+    : ALL_COLORS.filter((c) => !(known.excludedColors || []).includes(c));
   const possibleValues = known.value !== undefined
     ? [known.value]
-    : [1, 2, 3, 4, 5];
+    : ALL_VALUES.filter((v) => !(known.excludedValues || []).includes(v));
   return { possibleColors, possibleValues };
 }
 

@@ -17,8 +17,15 @@ export interface GameState {
   finalRoundStarted?: boolean;
   finalRoundTurnsLeft?: number;
   playerCount: number;
-  /** cardId -> known color/value from hints (FR-19) */
-  hintKnowledge: Map<number, { color?: Color; value?: number }>;
+  /** cardId -> known color/value from hints (FR-19); excluded* = option removal (cards that didn't match a hint) */
+  hintKnowledge: Map<number, HintKnowledge>;
+}
+
+export interface HintKnowledge {
+  color?: Color;
+  value?: number;
+  excludedColors?: Color[];
+  excludedValues?: number[];
 }
 
 const MAX_HINT_TOKENS = 8;

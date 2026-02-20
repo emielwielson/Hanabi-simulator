@@ -116,6 +116,28 @@ export function executeAction(state: GameState, action: Action): GameEvent {
           known.value = action.hintValue as number;
         }
         state.hintKnowledge.set(card.id, known);
+      } else {
+        // Option removal: cards that don't match can no longer be that color/number
+        const known = state.hintKnowledge.get(card.id) ?? {};
+        if (action.hintType === 'color') {
+          if (known.color === undefined) {
+            const excluded = known.excludedColors ?? [];
+            const val = action.hintValue as Color;
+            if (!excluded.includes(val)) {
+              known.excludedColors = [...excluded, val];
+              state.hintKnowledge.set(card.id, known);
+            }
+          }
+        } else {
+          if (known.value === undefined) {
+            const excluded = known.excludedValues ?? [];
+            const val = action.hintValue as number;
+            if (!excluded.includes(val)) {
+              known.excludedValues = [...excluded, val];
+              state.hintKnowledge.set(card.id, known);
+            }
+          }
+        }
       }
     });
     event = {
