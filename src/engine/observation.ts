@@ -17,11 +17,19 @@ export interface VisibleCard {
  * Observation passed to strategies. Engine must deep-copy before passing (FR-14).
  * legalActions is populated by buildObservation when engine provides it.
  */
+/** Known color/value for one slot of own hand (from hints). */
+export interface OwnSlotKnowledge {
+  color?: Color;
+  value?: number;
+}
+
 export interface Observation {
   currentPlayer: number;
   selfSeat: number;
   visibleHands: Record<number, VisibleCard[]>;
   ownHandSize: number;
+  /** Per-slot hint knowledge for own hand (index = slot). */
+  ownHintKnowledge: OwnSlotKnowledge[];
   hintsRemaining: number;
   livesRemaining: number;
   discardPile: Card[];
@@ -42,11 +50,13 @@ export function deepCopyObservation(obs: Observation): Observation {
     visibleHands[Number(seat)] = cards.map((c) => ({ ...c }));
   }
   const playedStacks: Record<number, number> = { ...obs.playedStacks };
+  const ownHintKnowledge = obs.ownHintKnowledge.map((s) => ({ ...s }));
   return {
     currentPlayer: obs.currentPlayer,
     selfSeat: obs.selfSeat,
     visibleHands,
     ownHandSize: obs.ownHandSize,
+    ownHintKnowledge,
     hintsRemaining: obs.hintsRemaining,
     livesRemaining: obs.livesRemaining,
     discardPile: obs.discardPile.map((c) => ({ ...c })),
@@ -75,11 +85,18 @@ export function buildObservation(state: GameState, seatIndex: number): Observati
     }));
   }
 
+  const ownHand = state.hands[seatIndex];
+  const ownHintKnowledge: OwnSlotKnowledge[] = ownHand.map((card) => {
+    const k = state.hintKnowledge.get(card.id);
+    return { color: k?.color, value: k?.value };
+  });
+
   const obs: Observation = {
     currentPlayer: state.currentPlayer,
     selfSeat: seatIndex,
     visibleHands,
-    ownHandSize: state.hands[seatIndex].length,
+    ownHandSize: ownHand.length,
+    ownHintKnowledge,
     hintsRemaining: state.hintTokens,
     livesRemaining: state.lifeTokens,
     discardPile: state.discardPile.map((c) => ({ ...c })),

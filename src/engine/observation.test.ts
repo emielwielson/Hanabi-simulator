@@ -13,6 +13,7 @@ describe('deepCopyObservation', () => {
       selfSeat: 0,
       visibleHands,
       ownHandSize: 5,
+      ownHintKnowledge: [{}, {}, {}, {}, {}],
       hintsRemaining: 8,
       livesRemaining: 3,
       discardPile,
