@@ -52,7 +52,9 @@ describe('writeResults', () => {
             {
               seed: 42,
               initialDeckOrder: [{ id: 0, color: Color.Red, value: 1 }],
-              events: [],
+              events: [
+                { type: 'play', playerIndex: 0, cardIndex: 0, success: false },
+              ],
               finalState: {
                 score: 15,
                 livesRemaining: 2,
@@ -75,5 +77,19 @@ describe('writeResults', () => {
     const files = fs.readdirSync(tracesDir);
     expect(files.length).toBeGreaterThan(0);
     expect(files.some((f) => f.endsWith('.json'))).toBe(true);
+
+    const summary = JSON.parse(fs.readFileSync(path.join(outputDir, 'summary.json'), 'utf-8'));
+    expect(summary.traceIndex).toBeDefined();
+    expect(summary.traceIndex.TestStrategy).toHaveLength(1);
+    const entry = summary.traceIndex.TestStrategy[0];
+    expect(entry).toMatchObject({
+      seed: 42,
+      score: 15,
+      endReason: 'deck_empty',
+      livesRemaining: 2,
+      hintsRemaining: 4,
+      misplayCount: 1,
+    });
+    expect(entry.filename).toBe('TestStrategy_42_0.json');
   });
 });

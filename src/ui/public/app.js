@@ -169,6 +169,29 @@ async function renderTraces(timestamp, summary) {
     return;
   }
 
+  if (summary.traceIndex) {
+    section.style.display = 'block';
+    const strategyOrder = summary.strategyNames && summary.strategyNames.length > 0
+      ? summary.strategyNames.filter((n) => summary.traceIndex[n]?.length)
+      : Object.keys(summary.traceIndex);
+    let html = '<h3>Debug Traces</h3>';
+    for (const name of strategyOrder) {
+      const rows = (summary.traceIndex[name] || []).slice().sort((a, b) => (b.score - a.score));
+      if (rows.length === 0) continue;
+      html += `<h4 class="trace-strategy-name">${escapeHtml(name)}</h4>`;
+      html += '<table class="trace-table"><thead><tr><th>Score</th><th>Seed</th><th>End reason</th><th>Lives</th><th>Hints</th><th>Misplays</th><th>Replay</th></tr></thead><tbody>';
+      for (const row of rows) {
+        html += `<tr><td>${row.score}</td><td>${row.seed}</td><td>${row.endReason}</td><td>${row.livesRemaining}</td><td>${row.hintsRemaining}</td><td>${row.misplayCount}</td><td><button type="button" class="trace-replay-btn" data-timestamp="${escapeHtml(timestamp)}" data-filename="${escapeHtml(row.filename)}">View replay</button></td></tr>`;
+      }
+      html += '</tbody></table>';
+    }
+    section.innerHTML = html;
+    section.querySelectorAll('.trace-replay-btn').forEach((btn) => {
+      btn.onclick = () => openReplay(btn.dataset.timestamp, btn.dataset.filename);
+    });
+    return;
+  }
+
   try {
     const files = await api(`/api/results/${timestamp}/traces`);
     if (files.length === 0) {
@@ -192,6 +215,13 @@ async function renderTraces(timestamp, summary) {
   } catch {
     section.style.display = 'none';
   }
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
 }
 
 let replayState = null;

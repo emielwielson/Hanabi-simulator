@@ -29,24 +29,42 @@ export function writeResults(
     strategyTiming[r.name] = { totalMs: r.timing.totalMs, avgPerGameMs: r.timing.avgPerGameMs };
   }
 
+  const summaryPayload: Record<string, unknown> = {
+    timestamp,
+    strategyNames: simulationResult.results.map((r) => r.name),
+    gameCount: simulationResult.seeds.length,
+    strategyTiming,
+    config: {
+      playerCount: config.playerCount,
+      hintTokens: config.hintTokens,
+      lifeTokens: config.lifeTokens,
+      loggingMode: config.loggingMode,
+    },
+  };
+
+  if (config.loggingMode === 'debug') {
+    const traceIndex: Record<string, { seed: number; score: number; endReason: string; livesRemaining: number; hintsRemaining: number; misplayCount: number; filename: string }[]> = {};
+    for (const result of simulationResult.results) {
+      if (!result.traces) continue;
+      traceIndex[result.name] = result.traces.map((trace, i) => {
+        const misplayCount = trace.events.filter((e) => e.type === 'play' && !e.success).length;
+        return {
+          seed: trace.seed,
+          score: trace.finalState.score,
+          endReason: trace.finalState.endReason,
+          livesRemaining: trace.finalState.livesRemaining,
+          hintsRemaining: trace.finalState.hintsRemaining,
+          misplayCount,
+          filename: `${sanitizeFilename(result.name)}_${trace.seed}_${i}.json`,
+        };
+      });
+    }
+    summaryPayload.traceIndex = traceIndex;
+  }
+
   fs.writeFileSync(
     path.join(resultsDir, 'summary.json'),
-    JSON.stringify(
-      {
-        timestamp,
-        strategyNames: simulationResult.results.map((r) => r.name),
-        gameCount: simulationResult.seeds.length,
-        strategyTiming,
-        config: {
-          playerCount: config.playerCount,
-          hintTokens: config.hintTokens,
-          lifeTokens: config.lifeTokens,
-          loggingMode: config.loggingMode,
-        },
-      },
-      null,
-      2
-    )
+    JSON.stringify(summaryPayload, null, 2)
   );
 
   fs.writeFileSync(
