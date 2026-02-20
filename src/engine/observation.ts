@@ -1,15 +1,27 @@
 import type { Card, Color } from './types';
 import type { GameEvent } from './events';
-import type { GameState } from './game-state';
+import type { GameState, HintKnowledge } from './game-state';
 import { PLAYER_COUNT } from './game-state';
 
 /**
  * Card in another player's hand. In standard Hanabi, you see all other players' cards.
+ * knownToHolder is what that player has been told about this card (from hints / option removal).
  */
 export interface VisibleCard {
   cardId: number;
   color?: Color;
   value?: number;
+  /** Hint knowledge that the card's holder has for this card. */
+  knownToHolder?: HintKnowledge;
+}
+
+function copyHintKnowledge(k: HintKnowledge): HintKnowledge {
+  return {
+    color: k.color,
+    value: k.value,
+    excludedColors: k.excludedColors?.slice(),
+    excludedValues: k.excludedValues?.slice(),
+  };
 }
 
 /**
@@ -43,7 +55,10 @@ export interface Observation {
 export function deepCopyObservation(obs: Observation): Observation {
   const visibleHands: Record<number, VisibleCard[]> = {};
   for (const [seat, cards] of Object.entries(obs.visibleHands)) {
-    visibleHands[Number(seat)] = cards.map((c) => ({ ...c }));
+    visibleHands[Number(seat)] = cards.map((c) => ({
+      ...c,
+      knownToHolder: c.knownToHolder ? copyHintKnowledge(c.knownToHolder) : undefined,
+    }));
   }
   const playedStacks: Record<number, number> = { ...obs.playedStacks };
   const ownHintKnowledge = obs.ownHintKnowledge.map((s) => ({ ...s }));
@@ -92,11 +107,15 @@ export function buildObservation(
   for (let p = 0; p < PLAYER_COUNT; p++) {
     if (p === seatIndex) continue;
     const hand = state.hands[p];
-    visibleHands[p] = hand.map((card) => ({
-      cardId: card.id,
-      color: card.color,
-      value: card.value,
-    }));
+    visibleHands[p] = hand.map((card) => {
+      const k = state.hintKnowledge.get(card.id);
+      return {
+        cardId: card.id,
+        color: card.color,
+        value: card.value,
+        ...(k && { knownToHolder: copyHintKnowledge(k) }),
+      };
+    });
   }
 
   const ownHand = state.hands[seatIndex];
