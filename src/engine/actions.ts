@@ -146,7 +146,8 @@ export function validateActionForObservation(
     if (action.targetPlayer < 0 || action.targetPlayer >= PLAYER_COUNT) {
       return `Invalid hint: targetPlayer ${action.targetPlayer} out of range`;
     }
-    const targetHand = observation.visibleHands[action.targetPlayer] ?? [];
+    const partnerSeat = 1 - selfSeat;
+    const targetHand = action.targetPlayer === partnerSeat ? observation.visibleCards : [];
     if (action.hintType === 'number' && typeof action.hintValue === 'number') {
       if (action.hintValue < 1 || action.hintValue > 5) {
         return `Invalid hint: number hint must be 1-5, got ${action.hintValue}`;
@@ -186,17 +187,15 @@ export function getLegalActionsFromObservation(observation: Observation): Action
     }
   }
   if (observation.hintsRemaining > 0) {
-    for (let target = 0; target < PLAYER_COUNT; target++) {
-      if (target === selfSeat) continue;
-      const targetHand = observation.visibleHands[target] ?? [];
-      for (const color of COLORS) {
-        if (targetHand.some((c) => c.color === color)) {
-          actions.push({ type: 'hint', targetPlayer: target, hintType: 'color', hintValue: color });
-        }
+    const partnerSeat = 1 - selfSeat;
+    const targetHand = observation.visibleCards;
+    for (const color of COLORS) {
+      if (targetHand.some((c) => c.color === color)) {
+        actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'color', hintValue: color });
       }
-      for (let value = 1; value <= 5; value++) {
-        actions.push({ type: 'hint', targetPlayer: target, hintType: 'number', hintValue: value });
-      }
+    }
+    for (let value = 1; value <= 5; value++) {
+      actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'number', hintValue: value });
     }
   }
   return actions;

@@ -93,28 +93,23 @@ export class HintPartnerDiscardRightStrategy implements HanabiStrategy {
   private getHintForPlayableCard(observation: Observation): Action | null {
     if (observation.hintsRemaining <= 0) return null;
 
-    const { visibleHands, playedStacks } = observation;
+    const { visibleCards, playedStacks } = observation;
+    const partnerSeat = 1 - getSelfSeat(observation);
+    if (!visibleCards.length) return null;
 
-    for (const seatStr of Object.keys(visibleHands)) {
-      const targetSeat = Number(seatStr);
-      if (targetSeat === getSelfSeat(observation)) continue;
-      const hand = visibleHands[targetSeat];
-      if (!hand || hand.length === 0) continue;
+    for (let position = 0; position < visibleCards.length && position < 5; position++) {
+      const card = visibleCards[position];
+      if (card.color === undefined || card.value === undefined) continue;
+      const nextNeeded = (playedStacks[card.color] ?? 0) + 1;
+      if (card.value !== nextNeeded) continue;
 
-      for (let position = 0; position < hand.length && position < 5; position++) {
-        const card = hand[position];
-        if (card.color === undefined || card.value === undefined) continue;
-        const nextNeeded = (playedStacks[card.color] ?? 0) + 1;
-        if (card.value !== nextNeeded) continue;
-
-        const hintValue = position + 1;
-        return {
-          type: 'hint',
-          targetPlayer: targetSeat,
-          hintType: 'number',
-          hintValue,
-        };
-      }
+      const hintValue = position + 1;
+      return {
+        type: 'hint',
+        targetPlayer: partnerSeat,
+        hintType: 'number',
+        hintValue,
+      };
     }
     return null;
   }

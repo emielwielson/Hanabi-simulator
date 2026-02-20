@@ -3,7 +3,8 @@ import type { Observation } from './types';
 
 function createMockObservation(overrides: Partial<Observation> = {}): Observation {
   return {
-    visibleHands: { 1: [] },
+    visibleCards: [],
+    observerSeat: 0,
     ownHandSize: 5,
     ownCardIds: [10, 20, 30, 40, 50],
     hintsRemaining: 8,
@@ -75,16 +76,16 @@ describe('getOwnHintKnowledge', () => {
 });
 
 describe('getKnownToHolder', () => {
-  it('returns undefined when cardId not in visible hands', () => {
+  it('returns undefined when cardId not in visible cards', () => {
     const obs = createMockObservation({
-      visibleHands: { 1: [{ cardId: 100, color: 0, value: 1 }] },
+      visibleCards: [{ cardId: 100, color: 0, value: 1 }],
     });
     expect(getKnownToHolder(obs, 999)).toBeUndefined();
   });
 
   it('returns knowledge when hint events targeted that card', () => {
     const obs = createMockObservation({
-      visibleHands: { 1: [{ cardId: 100, color: 0, value: 1 }] },
+      visibleCards: [{ cardId: 100, color: 0, value: 1 }],
       actionHistory: [
         {
           type: 'hint',

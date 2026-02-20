@@ -5,7 +5,8 @@ import { runSimulation } from '../simulator/runner';
 
 function createMockObservation(overrides: Partial<Observation> = {}): Observation {
   return {
-    visibleHands: { 1: [] },
+    visibleCards: [],
+    observerSeat: 0,
     ownHandSize: 5,
     ownCardIds: [1, 2, 3, 4, 5],
     hintsRemaining: 8,

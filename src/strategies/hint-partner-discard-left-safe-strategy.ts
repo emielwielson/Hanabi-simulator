@@ -101,15 +101,10 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
     const inDiscard = observation.discardPile.filter(
       (c) => c.color === color && c.value === value
     ).length;
-    let inVisibleHands = 0;
-    for (const seatStr of Object.keys(observation.visibleHands)) {
-      const hand = observation.visibleHands[Number(seatStr)];
-      if (!hand) continue;
-      for (const card of hand) {
-        if (card.color === color && card.value === value) inVisibleHands++;
-      }
-    }
-    const remaining = total - onStack - inDiscard - inVisibleHands;
+    const inVisibleCards = observation.visibleCards.filter(
+      (c) => c.color === color && c.value === value
+    ).length;
+    const remaining = total - onStack - inDiscard - inVisibleCards;
     return remaining === 1;
   }
 
@@ -138,28 +133,23 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
   private getHintForPlayableCard(observation: Observation): Action | null {
     if (observation.hintsRemaining <= 0) return null;
 
-    const { visibleHands, playedStacks } = observation;
+    const { visibleCards, playedStacks } = observation;
+    const partnerSeat = 1 - getSelfSeat(observation);
+    if (!visibleCards.length) return null;
 
-    for (const seatStr of Object.keys(visibleHands)) {
-      const targetSeat = Number(seatStr);
-      if (targetSeat === getSelfSeat(observation)) continue;
-      const hand = visibleHands[targetSeat];
-      if (!hand || hand.length === 0) continue;
+    for (let position = 0; position < visibleCards.length && position < 5; position++) {
+      const card = visibleCards[position];
+      if (card.color === undefined || card.value === undefined) continue;
+      const nextNeeded = (playedStacks[card.color] ?? 0) + 1;
+      if (card.value !== nextNeeded) continue;
 
-      for (let position = 0; position < hand.length && position < 5; position++) {
-        const card = hand[position];
-        if (card.color === undefined || card.value === undefined) continue;
-        const nextNeeded = (playedStacks[card.color] ?? 0) + 1;
-        if (card.value !== nextNeeded) continue;
-
-        const hintValue = position + 1;
-        return {
-          type: 'hint',
-          targetPlayer: targetSeat,
-          hintType: 'number',
-          hintValue,
-        };
-      }
+      const hintValue = position + 1;
+      return {
+        type: 'hint',
+        targetPlayer: partnerSeat,
+        hintType: 'number',
+        hintValue,
+      };
     }
     return null;
   }

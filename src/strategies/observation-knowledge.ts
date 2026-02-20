@@ -37,13 +37,9 @@ export function getKnownToHolder(
   observation: Observation,
   cardId: number
 ): HintKnowledge | undefined {
-  for (const [seatStr, cards] of Object.entries(observation.visibleHands)) {
-    const seat = Number(seatStr);
-    if (cards.some((c) => c.cardId === cardId)) {
-      return getKnowledgeForCard(observation.actionHistory, cardId, seat);
-    }
-  }
-  return undefined;
+  if (!observation.visibleCards.some((c) => c.cardId === cardId)) return undefined;
+  const partnerSeat = 1 - getSelfSeat(observation);
+  return getKnowledgeForCard(observation.actionHistory, cardId, partnerSeat);
 }
 
 function getKnowledgeForCard(

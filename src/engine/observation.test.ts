@@ -3,9 +3,10 @@ import { buildObservation, deepCopyObservation, getSelfSeat } from './observatio
 import { createInitialState } from './game-state';
 
 describe('getSelfSeat', () => {
-  it('returns the seat not present in visibleHands', () => {
+  it('returns observerSeat', () => {
     const obs: Observation = {
-      visibleHands: { 1: [{ cardId: 10 }] },
+      visibleCards: [{ cardId: 10 }],
+      observerSeat: 0,
       ownHandSize: 5,
       ownCardIds: [1, 2, 3, 4, 5],
       hintsRemaining: 8,
@@ -21,13 +22,12 @@ describe('getSelfSeat', () => {
 
 describe('deepCopyObservation', () => {
   it('returns a copy that does not share references with original', () => {
-    const visibleHands: Record<number, { cardId: number }[]> = {
-      1: [{ cardId: 10 }, { cardId: 11 }],
-    };
+    const visibleCards = [{ cardId: 10 }, { cardId: 11 }];
     const discardPile = [{ id: 1, color: 0, value: 1 }];
     const playedStacks = { 0: 1, 1: 0, 2: 0, 3: 0, 4: 0 };
     const obs: Observation = {
-      visibleHands,
+      visibleCards,
+      observerSeat: 0,
       ownHandSize: 5,
       ownCardIds: [10, 11, 12, 13, 14],
       hintsRemaining: 8,
@@ -39,8 +39,8 @@ describe('deepCopyObservation', () => {
     };
     const copy = deepCopyObservation(obs);
     expect(copy).not.toBe(obs);
-    expect(copy.visibleHands).not.toBe(obs.visibleHands);
-    expect(copy.visibleHands[1]).not.toBe(obs.visibleHands[1]);
+    expect(copy.visibleCards).not.toBe(obs.visibleCards);
+    expect(copy.visibleCards[0]).not.toBe(obs.visibleCards[0]);
     expect(copy.discardPile).not.toBe(obs.discardPile);
     expect(copy.actionHistory).not.toBe(obs.actionHistory);
     expect(copy.playedStacks).not.toBe(obs.playedStacks);
@@ -57,13 +57,11 @@ describe('buildObservation', () => {
     expect(obs.ownCardIds).toEqual(state.hands[0].map((c) => c.id));
   });
 
-  it('visible cards are cardId, color, value only (knowledge via getKnownToHolder)', () => {
+  it('visibleCards are cardId, color, value only (knowledge via getKnownToHolder)', () => {
     const state = createInitialState(99);
     const obs = buildObservation(state, 0);
-    for (const cards of Object.values(obs.visibleHands)) {
-      for (const card of cards) {
-        expect(Object.keys(card).sort()).toEqual(['cardId', 'color', 'value']);
-      }
+    for (const card of obs.visibleCards) {
+      expect(Object.keys(card).sort()).toEqual(['cardId', 'color', 'value']);
     }
   });
 });
