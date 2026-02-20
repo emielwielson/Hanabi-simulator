@@ -1,4 +1,5 @@
 import type { Action } from '../engine/actions';
+import { getLegalActionsFromObservation } from '../engine/actions';
 import { getSelfSeat } from '../engine/observation';
 import type { HanabiStrategy, Observation } from './types';
 import { getDeterministicRandom } from './observation-rng';
@@ -18,7 +19,7 @@ export class HintPartnerStrategy implements HanabiStrategy {
   }
 
   getAction(observation: Observation): Action {
-    const legalActions = observation.legalActions ?? [];
+    const legalActions = getLegalActionsFromObservation(observation);
     if (legalActions.length === 0) {
       if (observation.ownHandSize > 0 && observation.hintsRemaining < 8) {
         return { type: 'discard', cardIndex: 0 };

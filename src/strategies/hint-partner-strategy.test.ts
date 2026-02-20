@@ -15,7 +15,6 @@ function createMockObservation(overrides: Partial<Observation> = {}): Observatio
     playedStacks: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 },
     deckCount: 35,
     actionHistory: [],
-    legalActions: [{ type: 'play', cardIndex: 0 }, { type: 'discard', cardIndex: 0 }],
     ...overrides,
   };
 }

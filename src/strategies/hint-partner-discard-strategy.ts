@@ -1,4 +1,5 @@
 import type { Action } from '../engine/actions';
+import { getLegalActionsFromObservation } from '../engine/actions';
 import { getSelfSeat } from '../engine/observation';
 import type { HanabiStrategy, Observation } from './types';
 import { getDeterministicRNG } from './observation-rng';
@@ -16,7 +17,7 @@ export class HintPartnerDiscardStrategy implements HanabiStrategy {
   }
 
   getAction(observation: Observation): Action {
-    const legalActions = observation.legalActions ?? [];
+    const legalActions = getLegalActionsFromObservation(observation);
     const rng = getDeterministicRNG(observation, this.rngSeed);
 
     if (legalActions.length === 0) {

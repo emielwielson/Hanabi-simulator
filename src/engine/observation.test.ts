@@ -35,7 +35,6 @@ describe('deepCopyObservation', () => {
       playedStacks,
       deckCount: 35,
       actionHistory: [],
-      legalActions: [{ type: 'play' as const, cardIndex: 0 }],
     };
     const copy = deepCopyObservation(obs);
     expect(copy).not.toBe(obs);

@@ -1,5 +1,3 @@
-import type { Action } from './actions';
-import { getLegalActions } from './actions';
 import type { Card, Color } from './types';
 import type { GameEvent } from './events';
 import type { GameState } from './game-state';
@@ -16,7 +14,6 @@ export interface VisibleCard {
 
 /**
  * Observation passed to strategies. Engine must deep-copy before passing (FR-14).
- * legalActions is populated by buildObservation when engine provides it.
  */
 /** Known color/value for one slot of own hand (from hints). */
 export interface OwnSlotKnowledge {
@@ -37,8 +34,6 @@ export interface Observation {
   playedStacks: Record<Color, number>;
   deckCount: number;
   actionHistory: GameEvent[];
-  /** Legal actions for current player; populated by engine's buildObservation. */
-  legalActions?: Action[];
 }
 
 /**
@@ -63,7 +58,6 @@ export function deepCopyObservation(obs: Observation): Observation {
     playedStacks,
     deckCount: obs.deckCount,
     actionHistory: [...obs.actionHistory],
-    legalActions: obs.legalActions ? obs.legalActions.map((a) => ({ ...a })) : undefined,
   };
 }
 
@@ -122,7 +116,6 @@ export function buildObservation(
     playedStacks: { ...state.playedStacks },
     deckCount: state.deck.length,
     actionHistory: [...state.actionHistory],
-    legalActions: getLegalActions(state, state.currentPlayer),
   };
   return deepCopyObservation(obs);
 }
