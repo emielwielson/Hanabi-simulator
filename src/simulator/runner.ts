@@ -163,12 +163,15 @@ export function runSimulation(
 
     const t1 = performance.now();
     const totalMs = t1 - t0;
+    let sumDecisionMs = 0;
+    let maxDecisionMs = 0;
+    for (let i = 0; i < decisionTimes.length; i++) {
+      const t = decisionTimes[i];
+      sumDecisionMs += t;
+      if (t > maxDecisionMs) maxDecisionMs = t;
+    }
     const avgDecisionMs =
-      decisionTimes.length > 0
-        ? decisionTimes.reduce((a, b) => a + b, 0) / decisionTimes.length
-        : 0;
-    const maxDecisionMs =
-      decisionTimes.length > 0 ? Math.max(...decisionTimes) : 0;
+      decisionTimes.length > 0 ? sumDecisionMs / decisionTimes.length : 0;
 
     results.push({
       name: strategyEntry.name,

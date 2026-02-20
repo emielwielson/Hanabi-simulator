@@ -11,6 +11,11 @@ export const CONFIG_PRESETS: ConfigPreset[] = [
   { id: 'default', label: 'Default (2p, 1k games)', config: createDefaultConfig() },
   { id: 'quick', label: 'Quick (2p, 100 games)', config: createDefaultConfig({ gameCount: 100 }) },
   {
+    id: '2p-100k',
+    label: '2 players (100k games)',
+    config: createDefaultConfig({ playerCount: 2, gameCount: 100_000 }),
+  },
+  {
     id: '4p',
     label: '4 players (500 games)',
     config: createDefaultConfig({ playerCount: 4, gameCount: 500 }),
