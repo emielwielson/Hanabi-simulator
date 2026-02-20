@@ -3,6 +3,7 @@ import { ExampleStrategy } from './example-strategy';
 import { HintPartnerStrategy } from './hint-partner-strategy';
 import { HintPartnerDeductionStrategy } from './hint-partner-deduction-strategy';
 import { HintPartnerDiscardStrategy } from './hint-partner-discard-strategy';
+import { HintPartnerDiscardRightStrategy } from './hint-partner-discard-right-strategy';
 
 export interface StrategyEntry {
   name: string;
@@ -30,6 +31,10 @@ export function getStrategies(): StrategyEntry[] {
     {
       name: 'HintPartner_discard',
       factory: () => new HintPartnerDiscardStrategy(42),
+    },
+    {
+      name: 'HintPartner_discard_right',
+      factory: () => new HintPartnerDiscardRightStrategy(42),
     },
   ];
 }
