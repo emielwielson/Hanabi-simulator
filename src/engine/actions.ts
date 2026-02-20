@@ -200,3 +200,30 @@ export function getLegalActionsFromObservation(observation: Observation): Action
   }
   return actions;
 }
+
+/**
+ * Like getLegalActionsFromObservation but excludes discard actions.
+ * Used by the neural net so the model only ever sees play and hint as options.
+ */
+export function getLegalActionsFromObservationNoDiscard(observation: Observation): Action[] {
+  const actions: Action[] = [];
+  const handSize = observation.ownHandSize;
+  const selfSeat = getSelfSeat(observation);
+
+  for (let i = 0; i < handSize; i++) {
+    actions.push({ type: 'play', cardIndex: i });
+  }
+  if (observation.hintsRemaining > 0) {
+    const partnerSeat = 1 - selfSeat;
+    const targetHand = observation.visibleCards;
+    for (const color of COLORS) {
+      if (targetHand.some((c) => c.color === color)) {
+        actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'color', hintValue: color });
+      }
+    }
+    for (let value = 1; value <= 5; value++) {
+      actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'number', hintValue: value });
+    }
+  }
+  return actions;
+}

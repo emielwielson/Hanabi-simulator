@@ -1,6 +1,9 @@
 import * as tf from '@tensorflow/tfjs-node';
 import type { Action } from '../engine/actions';
-import { getLegalActionsFromObservation } from '../engine/actions';
+import {
+  getLegalActionsFromObservation,
+  getLegalActionsFromObservationNoDiscard,
+} from '../engine/actions';
 import type { HanabiStrategy, Observation } from './types';
 import { getDeterministicRandom } from './observation-rng';
 import { encodeObservation, ENCODER_OUTPUT_SIZE } from './neural-net/encoder';
@@ -26,12 +29,16 @@ export class NeuralNetStrategy implements HanabiStrategy {
   }
 
   getAction(observation: Observation): Action {
-    const legalActions = getLegalActionsFromObservation(observation);
+    const legalActions = getLegalActionsFromObservationNoDiscard(observation);
     if (legalActions.length === 0) {
-      if (observation.ownHandSize > 0 && observation.hintsRemaining < 8) {
-        return { type: 'discard', cardIndex: 0 };
+      const fullLegal = getLegalActionsFromObservation(observation);
+      if (fullLegal.length === 0) {
+        if (observation.ownHandSize > 0 && observation.hintsRemaining < 8) {
+          return { type: 'discard', cardIndex: 0 };
+        }
+        return { type: 'play', cardIndex: 0 };
       }
-      return { type: 'play', cardIndex: 0 };
+      return this.randomLegalAction(fullLegal, observation);
     }
 
     if (this.model === null) {
@@ -47,15 +54,17 @@ export class NeuralNetStrategy implements HanabiStrategy {
     }
     try {
       const input = tf.tensor2d([encoded], [1, ENCODER_OUTPUT_SIZE]);
-      const logitsTensor = this.model!.predict(input) as tf.Tensor;
+      const out = this.model!.predict(input);
+      const policyOut = Array.isArray(out) ? out[0] : (out as tf.Tensor);
       const numActions = Math.min(legalActions.length, OUTPUT_ACTION_SIZE);
       const logitsArr = new Float32Array(numActions);
-      const fullData = logitsTensor.dataSync();
+      const fullData = policyOut.dataSync();
       for (let i = 0; i < numActions; i++) {
         logitsArr[i] = fullData[i];
       }
       input.dispose();
-      logitsTensor.dispose();
+      policyOut.dispose();
+      if (Array.isArray(out)) out[1].dispose();
 
       let bestIdx = 0;
       let bestVal = logitsArr[0];

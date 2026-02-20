@@ -30,8 +30,8 @@
   </style>
 </head>
 <body>
-  <h1>Training loss (25 − score)</h1>
-  <p class="meta">X = game index. Y = loss per game. Learning rate in separate panel (top right). Refresh page to reconnect.</p>
+  <h1>Training: average reward</h1>
+  <p class="meta">X = game index (one point every 500 games). Y = cumulative average reward (same as "avg reward" in log). Refresh page to reconnect.</p>
   <div class="dashboard">
     <div class="main-chart-wrap">
       <canvas id="chart"></canvas>
@@ -47,7 +47,7 @@
       data: {
         labels: [],
         datasets: [{
-          label: 'Loss (25 − score)',
+          label: 'Avg reward (cumulative)',
           data: [],
           borderColor: 'rgb(75, 192, 192)',
           backgroundColor: 'rgba(75, 192, 192, 0.1)',
@@ -62,7 +62,7 @@
         maintainAspectRatio: true,
         scales: {
           x: { title: { display: true, text: 'Game' }, adapters: {} },
-          y: { title: { display: true, text: 'Loss' }, beginAtZero: true, suggestedMin: 0 }
+          y: { title: { display: true, text: 'Reward (avg)' } }
         },
         plugins: { legend: { display: true } }
       }
@@ -102,7 +102,7 @@
           if (!history || !history.length) return;
           const labels = history.map(d => d.game);
           chart.data.labels = labels;
-          chart.data.datasets[0].data = history.map(d => d.loss);
+          chart.data.datasets[0].data = history.map(d => d.avgReward ?? d.rewardMovingAvg ?? d.reward ?? 0);
           chart.update('none');
           lrChart.data.labels = labels;
           lrChart.data.datasets[0].data = history.map(d => d.learningRate ?? 0);
