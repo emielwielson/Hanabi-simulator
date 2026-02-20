@@ -25,8 +25,6 @@ export interface OwnSlotKnowledge {
 }
 
 export interface Observation {
-  currentPlayer: number;
-  selfSeat: number;
   /** Game seed for deterministic RNG in stateless strategies. */
   gameSeed?: number;
   visibleHands: Record<number, VisibleCard[]>;
@@ -55,8 +53,6 @@ export function deepCopyObservation(obs: Observation): Observation {
   const playedStacks: Record<number, number> = { ...obs.playedStacks };
   const ownHintKnowledge = obs.ownHintKnowledge.map((s) => ({ ...s }));
   return {
-    currentPlayer: obs.currentPlayer,
-    selfSeat: obs.selfSeat,
     gameSeed: obs.gameSeed,
     visibleHands,
     ownHandSize: obs.ownHandSize,
@@ -69,6 +65,18 @@ export function deepCopyObservation(obs: Observation): Observation {
     actionHistory: [...obs.actionHistory],
     legalActions: obs.legalActions ? obs.legalActions.map((a) => ({ ...a })) : undefined,
   };
+}
+
+/**
+ * Returns the seat index of the observer (the player this observation is for).
+ * The observer's hand is omitted from visibleHands, so the missing seat is self.
+ */
+export function getSelfSeat(observation: Observation): number {
+  const keys = new Set(Object.keys(observation.visibleHands).map(Number));
+  for (let i = 0; i < PLAYER_COUNT; i++) {
+    if (!keys.has(i)) return i;
+  }
+  throw new Error('getSelfSeat: no missing seat in visibleHands');
 }
 
 export interface BuildObservationOptions {
@@ -104,8 +112,6 @@ export function buildObservation(
   });
 
   const obs: Observation = {
-    currentPlayer: state.currentPlayer,
-    selfSeat: seatIndex,
     gameSeed: options?.gameSeed,
     visibleHands,
     ownHandSize: ownHand.length,

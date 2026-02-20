@@ -1,5 +1,22 @@
 import type { Observation } from './observation';
-import { deepCopyObservation } from './observation';
+import { deepCopyObservation, getSelfSeat } from './observation';
+
+describe('getSelfSeat', () => {
+  it('returns the seat not present in visibleHands', () => {
+    const obs: Observation = {
+      visibleHands: { 1: [{ cardId: 10 }] },
+      ownHandSize: 5,
+      ownHintKnowledge: [],
+      hintsRemaining: 8,
+      livesRemaining: 3,
+      discardPile: [],
+      playedStacks: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 },
+      deckCount: 35,
+      actionHistory: [],
+    };
+    expect(getSelfSeat(obs)).toBe(0);
+  });
+});
 
 describe('deepCopyObservation', () => {
   it('returns a copy that does not share references with original', () => {
@@ -9,8 +26,6 @@ describe('deepCopyObservation', () => {
     const discardPile = [{ id: 1, color: 0, value: 1 }];
     const playedStacks = { 0: 1, 1: 0, 2: 0, 3: 0, 4: 0 };
     const obs: Observation = {
-      currentPlayer: 0,
-      selfSeat: 0,
       visibleHands,
       ownHandSize: 5,
       ownHintKnowledge: [{}, {}, {}, {}, {}],

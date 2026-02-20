@@ -12,7 +12,7 @@ describe('calculateScore', () => {
 describe('runGame', () => {
   it('runs to completion with example strategy', () => {
     const strategy = new ExampleStrategy(123);
-    const result = runGame(42, (obs, _) => strategy.getAction(obs));
+    const result = runGame(42, (obs) => strategy.getAction(obs));
     expect(result.finalState.score).toBeGreaterThanOrEqual(0);
     expect(result.finalState.score).toBeLessThanOrEqual(25);
     expect(['lives_zero', 'max_score', 'deck_empty']).toContain(result.finalState.endReason);
@@ -23,8 +23,8 @@ describe('runGame', () => {
       const actions = obs.legalActions ?? [];
       return actions[0] ?? { type: 'discard', cardIndex: 0 };
     };
-    const r1 = runGame(99, (obs, _) => getAction(obs));
-    const r2 = runGame(99, (obs, _) => getAction(obs));
+    const r1 = runGame(99, (obs) => getAction(obs));
+    const r2 = runGame(99, (obs) => getAction(obs));
     expect(r1.finalState.score).toBe(r2.finalState.score);
     expect(r1.finalState.endReason).toBe(r2.finalState.endReason);
   });

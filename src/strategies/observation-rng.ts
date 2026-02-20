@@ -1,14 +1,16 @@
+import { getSelfSeat } from '../engine/observation';
 import { createSeededRNG } from '../engine/seeded-rng';
 import type { Observation } from './types';
 
 function seedFromObservation(observation: Observation, baseSeed: number): number {
+  const selfSeat = getSelfSeat(observation);
   const turnIndex = observation.actionHistory.filter(
-    (e) => e.playerIndex === observation.selfSeat
+    (e) => e.playerIndex === selfSeat
   ).length;
   return (
     baseSeed +
     (observation.gameSeed ?? 0) +
-    observation.selfSeat * 10000 +
+    selfSeat * 10000 +
     turnIndex
   );
 }

@@ -178,13 +178,13 @@ export interface RunGameResult {
 
 export function runGame(
   seed: number,
-  getAction: (obs: Observation, currentPlayer: number) => Action
+  getAction: (obs: Observation) => Action
 ): RunGameResult {
   const state = createInitialState(seed);
 
   while (!state.gameOver) {
     const obs = buildObservation(state, state.currentPlayer, { gameSeed: seed });
-    const action = getAction(obs, state.currentPlayer);
+    const action = getAction(obs);
     executeAction(state, action);
   }
 

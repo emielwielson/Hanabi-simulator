@@ -1,4 +1,5 @@
 import type { Action } from '../engine/actions';
+import { getSelfSeat } from '../engine/observation';
 import type { HanabiStrategy, Observation } from './types';
 import type { Color } from '../engine/types';
 import { DECK_COMPOSITION } from '../engine/types';
@@ -113,7 +114,7 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
   private getPlayFromHint(observation: Observation): number | null {
     for (let i = observation.actionHistory.length - 1; i >= 0; i--) {
       const ev = observation.actionHistory[i];
-      if (ev.type === 'hint' && ev.targetPlayer === observation.selfSeat) {
+      if (ev.type === 'hint' && ev.targetPlayer === getSelfSeat(observation)) {
         const hintValue = ev.hintType === 'number' ? (ev.hintValue as number) : null;
         if (hintValue !== null && hintValue >= 1 && hintValue <= 5) {
           const position = hintValue - 1;
@@ -124,7 +125,7 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
         break;
       }
       if (ev.type === 'play' || ev.type === 'discard') {
-        if (ev.playerIndex === observation.selfSeat) {
+        if (ev.playerIndex === getSelfSeat(observation)) {
           break;
         }
       }
@@ -139,7 +140,7 @@ export class HintPartnerDiscardLeftSafeStrategy implements HanabiStrategy {
 
     for (const seatStr of Object.keys(visibleHands)) {
       const targetSeat = Number(seatStr);
-      if (targetSeat === observation.selfSeat) continue;
+      if (targetSeat === getSelfSeat(observation)) continue;
       const hand = visibleHands[targetSeat];
       if (!hand || hand.length === 0) continue;
 

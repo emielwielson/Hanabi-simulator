@@ -79,7 +79,7 @@ The **Hanabi Strategy Simulator** is a TypeScript-based simulator for the cooper
 
 | ID | Requirement |
 |----|-------------|
-| FR-18 | Observation must include: `currentPlayer`, `selfSeat`, `visibleHands`, `ownHandSize`, `hintsRemaining`, `livesRemaining`, `discardPile`, `playedStacks`, `deckCount`, `actionHistory` |
+| FR-18 | Observation must include: `visibleHands`, `ownHandSize`, `hintsRemaining`, `livesRemaining`, `discardPile`, `playedStacks`, `deckCount`, `actionHistory`. The observer's seat ("self") is derived via `getSelfSeat(observation)` (the seat whose hand is omitted from `visibleHands`). |
 | FR-19 | `visibleHands` must show all other players' cards (color/number where hinted) |
 | FR-20 | `ownHandSize` is the count only; strategies never see their own cards |
 
@@ -289,8 +289,6 @@ interface HanabiStrategy {
 
 ```typescript
 type Observation = {
-  currentPlayer: number
-  selfSeat: number
   visibleHands: Record<number, VisibleCard[]>
   ownHandSize: number
   hintsRemaining: number
@@ -299,5 +297,7 @@ type Observation = {
   playedStacks: Record<Color, number>
   deckCount: number
   actionHistory: GameEvent[]
+  // optional: gameSeed, legalActions
 }
+// Observer's seat: getSelfSeat(observation) — the seat not present in visibleHands
 ```

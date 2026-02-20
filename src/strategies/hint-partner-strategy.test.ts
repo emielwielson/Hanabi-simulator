@@ -5,10 +5,8 @@ import { runSimulation } from '../simulator/runner';
 
 function createMockObservation(overrides: Partial<Observation> = {}): Observation {
   return {
-    currentPlayer: 0,
-    selfSeat: 0,
     gameSeed: 0,
-    visibleHands: {},
+    visibleHands: { 1: [] },
     ownHandSize: 5,
     ownHintKnowledge: [{}, {}, {}, {}, {}],
     hintsRemaining: 8,
