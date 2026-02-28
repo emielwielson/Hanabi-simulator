@@ -7,13 +7,16 @@ import { Color, DECK_COMPOSITION, COLORS } from '../engine/types';
 import { getDeterministicRNG } from './observation-rng';
 
 /**
- * HintPartner strategy with protection hints.
+ * Protection2 strategy.
  * - Number hint N = "your card at position N-1 is playable"
  * - Color hint = "the first K cards from the left are protected", Red=1, Yellow=2, Green=3, Blue=4, White=5
- * - Partner model: discards leftmost; plays only when he knows (number hint or deduction)
- * - We check if partner can safely discard or play; if not, we give number hint (playable) or color hint (protection) first.
+ * - Partner model: discards leftmost UNPROTECTED card; plays only when he knows (number hint or deduction)
+ * - PartnerSafe: play, discard unprotected, discard leftmost with risk
+ * - PartnerUnsafe: number hint, protection hint, discard unprotected
+ * - Fallback: discard leftmost (never random)
+ * - No data leakage: uses only Observation
  */
-export class HintPartnerProtectionStrategy implements HanabiStrategy {
+export class Protection2Strategy implements HanabiStrategy {
   private readonly rngSeed: number;
 
   constructor(rngSeed = 42) {
@@ -59,7 +62,10 @@ export class HintPartnerProtectionStrategy implements HanabiStrategy {
         }
       }
 
-      const discardIdx = this.getMyLeftmostUnprotectedDiscardIndex(observation);
+      let discardIdx = this.getMyLeftmostUnprotectedDiscardIndex(observation);
+      if (discardIdx === null && this.getMyProtectedCount(observation) >= observation.ownHandSize && observation.ownHandSize > 0) {
+        discardIdx = observation.ownHandSize - 1;
+      }
       if (
         discardIdx !== null &&
         observation.hintsRemaining < 8
@@ -69,15 +75,17 @@ export class HintPartnerProtectionStrategy implements HanabiStrategy {
         );
         if (discardAction) return { ...discardAction };
       }
-    } else {
-      const playSlot = this.getMyPlayableSlot(observation);
-      if (playSlot !== null) {
-        const playAction = legalActions.find(
-          (a) => a.type === 'play' && a.cardIndex === playSlot
-        );
-        if (playAction) return { ...playAction };
-      }
 
+      if (observation.hintsRemaining < 8 && observation.ownHandSize > 0) {
+        const firstUnprotected = this.getMyProtectedCount(observation);
+        if (firstUnprotected < observation.ownHandSize) {
+          const discardAction = legalActions.find(
+            (a) => a.type === 'discard' && a.cardIndex === firstUnprotected
+          );
+          if (discardAction) return { ...discardAction };
+        }
+      }
+    } else {
       if (observation.hintsRemaining > 0) {
         const numberHintPos = this.getPartnerPlayablePositionPartnerDoesNotKnow(
           observation
@@ -93,7 +101,9 @@ export class HintPartnerProtectionStrategy implements HanabiStrategy {
           );
           if (hintAction) return { ...hintAction };
         }
+      }
 
+      if (observation.hintsRemaining > 0) {
         const protectionHint = this.getProtectionColorHintForPartner(observation);
         if (protectionHint !== null) {
           const partnerSeat = 1 - getSelfSeat(observation);
@@ -108,19 +118,39 @@ export class HintPartnerProtectionStrategy implements HanabiStrategy {
         }
       }
 
-      const discardIdx = this.getMyLeftmostUnprotectedDiscardIndex(observation);
+      const playSlot = this.getMyPlayableSlot(observation);
+      if (playSlot !== null) {
+        const playAction = legalActions.find(
+          (a) => a.type === 'play' && a.cardIndex === playSlot
+        );
+        if (playAction) return { ...playAction };
+      }
+
+      const fallbackDiscard = this.getMyLeftmostUnprotectedDiscardIndex(observation) ??
+        (this.getMyProtectedCount(observation) >= observation.ownHandSize && observation.ownHandSize > 0 ? observation.ownHandSize - 1 : null);
       if (
-        discardIdx !== null &&
+        fallbackDiscard !== null &&
         observation.hintsRemaining < 8
       ) {
         const discardAction = legalActions.find(
-          (a) => a.type === 'discard' && a.cardIndex === discardIdx
+          (a) => a.type === 'discard' && a.cardIndex === fallbackDiscard
         );
         if (discardAction) return { ...discardAction };
       }
     }
 
     const fallbackDiscard = this.getMyLeftmostUnprotectedDiscardIndex(observation);
+    if (
+      fallbackDiscard !== null &&
+      observation.ownHandSize > 0 &&
+      observation.hintsRemaining < 8
+    ) {
+      const discardAction = legalActions.find(
+        (a) => a.type === 'discard' && a.cardIndex === fallbackDiscard
+      );
+      if (discardAction) return { ...discardAction };
+    }
+
     if (
       fallbackDiscard === null &&
       this.getMyPlayableSlot(observation) === null &&
@@ -187,6 +217,27 @@ export class HintPartnerProtectionStrategy implements HanabiStrategy {
     });
   }
 
+  private getPartnerLeftmostUnprotectedIndex(observation: Observation): number {
+    const selfSeat = getSelfSeat(observation);
+    const partnerSeat = 1 - selfSeat;
+    const { visibleCards, actionHistory } = observation;
+
+    let maxProtectedCount = 0;
+    for (const ev of actionHistory) {
+      if (
+        ev.type === 'hint' &&
+        ev.playerIndex === selfSeat &&
+        ev.targetPlayer === partnerSeat &&
+        ev.hintType === 'color'
+      ) {
+        const protectedCount = (ev.hintValue as number) + 1;
+        if (protectedCount > maxProtectedCount) maxProtectedCount = protectedCount;
+      }
+    }
+
+    return Math.min(maxProtectedCount, visibleCards.length);
+  }
+
   private partnerCanSafelyDiscardOrPlay(observation: Observation): boolean {
     if (this.partnerHasPendingPlayableNumberHint(observation)) return true;
 
@@ -206,11 +257,12 @@ export class HintPartnerProtectionStrategy implements HanabiStrategy {
       if (knowsByNumber || knowsByDeduction) return true;
     }
 
-    const leftmost = visibleCards[0];
-    if (leftmost.color === undefined || leftmost.value === undefined)
-      return true;
-    if (this.isCriticalCard(observation, leftmost.color, leftmost.value))
-      return false;
+    const idx = this.getPartnerLeftmostUnprotectedIndex(observation);
+    if (idx >= visibleCards.length) return true;
+
+    const card = visibleCards[idx];
+    if (card.color === undefined || card.value === undefined) return true;
+    if (this.isCriticalCard(observation, card.color, card.value)) return false;
     return true;
   }
 
@@ -391,25 +443,6 @@ export class HintPartnerProtectionStrategy implements HanabiStrategy {
       }
     }
     return firstNonFive;
-  }
-
-  private getPartnerLeftmostUnprotectedIndex(observation: Observation): number {
-    const selfSeat = getSelfSeat(observation);
-    const partnerSeat = 1 - selfSeat;
-    const { visibleCards, actionHistory } = observation;
-    let maxProtectedCount = 0;
-    for (const ev of actionHistory) {
-      if (
-        ev.type === 'hint' &&
-        ev.playerIndex === selfSeat &&
-        ev.targetPlayer === partnerSeat &&
-        ev.hintType === 'color'
-      ) {
-        const protectedCount = (ev.hintValue as number) + 1;
-        if (protectedCount > maxProtectedCount) maxProtectedCount = protectedCount;
-      }
-    }
-    return Math.min(maxProtectedCount, visibleCards.length);
   }
 
   /** Protect the minimum cards so partner's discard target is safe. Only protect critical cards. */

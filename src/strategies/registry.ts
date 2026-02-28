@@ -6,6 +6,7 @@ import { HintPartnerDiscardRightStrategy } from './hint-partner-discard-right-st
 import { HintPartnerDiscardLeftSafeStrategy } from './hint-partner-discard-left-safe-strategy';
 import { HintPartnerDiscardRightSafeStrategy } from './hint-partner-discard-right-safe-strategy';
 import { HintPartnerProtectionStrategy } from './hint-partner-protection-strategy';
+import { Protection2Strategy } from './protection2-strategy';
 import { NeuralNetStrategy } from './neural-net-strategy';
 
 export interface StrategyEntry {
@@ -46,6 +47,10 @@ export function getStrategies(): StrategyEntry[] {
     {
       name: 'HintPartner_protection',
       factory: () => new HintPartnerProtectionStrategy(42),
+    },
+    {
+      name: 'Protection2',
+      factory: () => new Protection2Strategy(42),
     },
     {
       name: 'NeuralNet',

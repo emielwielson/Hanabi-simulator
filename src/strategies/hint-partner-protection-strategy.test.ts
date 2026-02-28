@@ -106,6 +106,7 @@ describe('HintPartnerProtectionStrategy', () => {
 
   it('gives color hint when partner leftmost is critical and no playable to hint', () => {
     const strategy = new HintPartnerProtectionStrategy(42);
+    // Partner has Red 4, Green 4, Blue 4. One of each discarded → all critical (last copy).
     const obs = createMockObservation({
       visibleCards: [
         { cardId: 100, color: Color.Red, value: 4 },
@@ -113,14 +114,18 @@ describe('HintPartnerProtectionStrategy', () => {
         { cardId: 102, color: Color.Blue, value: 4 },
       ],
       playedStacks: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 },
-      discardPile: [{ id: 50, color: Color.Red, value: 4 }],
+      discardPile: [
+        { id: 50, color: Color.Red, value: 4 },
+        { id: 51, color: Color.Green, value: 4 },
+        { id: 52, color: Color.Blue, value: 4 },
+      ],
       hintsRemaining: 3,
     });
     const action = strategy.getAction(obs);
     expect(action.type).toBe('hint');
     if (action.type === 'hint') {
       expect(action.hintType).toBe('color');
-      expect(action.hintValue).toBe(Color.Green);
+      expect(action.hintValue).toBe(Color.Green); // protects 3 cards (rightmost critical at pos 2)
       expect(action.targetPlayer).toBe(1);
     }
   });

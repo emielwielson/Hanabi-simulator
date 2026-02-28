@@ -97,6 +97,7 @@ export class HintPartnerDiscardRightStrategy implements HanabiStrategy {
     const partnerSeat = 1 - getSelfSeat(observation);
     if (!visibleCards.length) return null;
 
+    let firstNonFive: { hintValue: number } | null = null;
     for (let position = 0; position < visibleCards.length && position < 5; position++) {
       const card = visibleCards[position];
       if (card.color === undefined || card.value === undefined) continue;
@@ -104,12 +105,13 @@ export class HintPartnerDiscardRightStrategy implements HanabiStrategy {
       if (card.value !== nextNeeded) continue;
 
       const hintValue = position + 1;
-      return {
-        type: 'hint',
-        targetPlayer: partnerSeat,
-        hintType: 'number',
-        hintValue,
-      };
+      if (card.value === 5) {
+        return { type: 'hint', targetPlayer: partnerSeat, hintType: 'number', hintValue };
+      }
+      if (firstNonFive === null) firstNonFive = { hintValue };
+    }
+    if (firstNonFive !== null) {
+      return { type: 'hint', targetPlayer: partnerSeat, hintType: 'number', hintValue: firstNonFive.hintValue };
     }
     return null;
   }

@@ -60,13 +60,17 @@ export function validateAction(state: GameState, action: Action): string | null 
       if (action.hintValue < 1 || action.hintValue > 5) {
         return `Invalid hint: number hint must be 1-5, got ${action.hintValue}`;
       }
+    } else if (action.hintType === 'color') {
+      // Color hints are always legal (e.g. used for protection convention regardless of partner hand)
+      if (
+        typeof action.hintValue !== 'number' ||
+        action.hintValue < 0 ||
+        action.hintValue > 4
+      ) {
+        return `Invalid hint: color hint must be 0-4, got ${action.hintValue}`;
+      }
     } else {
-      const hasMatch = targetHand.some((card) => {
-        if (action.hintType === 'color') {
-          return card.color === action.hintValue;
-        }
-        return card.value === action.hintValue;
-      });
+      const hasMatch = targetHand.some((card) => card.value === action.hintValue);
       if (!hasMatch) {
         return 'Invalid hint: no matching cards in target hand';
       }
@@ -93,11 +97,8 @@ export function getLegalActions(state: GameState, seatIndex: number): Action[] {
   if (state.hintTokens > 0) {
     for (let target = 0; target < PLAYER_COUNT; target++) {
       if (target === seatIndex) continue;
-      const targetHand = state.hands[target];
       for (const color of COLORS) {
-        if (targetHand.some((c) => c.color === color)) {
-          actions.push({ type: 'hint', targetPlayer: target, hintType: 'color', hintValue: color });
-        }
+        actions.push({ type: 'hint', targetPlayer: target, hintType: 'color', hintValue: color });
       }
       for (let value = 1; value <= 5; value++) {
         // Number hints 1-5 are always legal (position-encoding convention)
@@ -152,13 +153,16 @@ export function validateActionForObservation(
       if (action.hintValue < 1 || action.hintValue > 5) {
         return `Invalid hint: number hint must be 1-5, got ${action.hintValue}`;
       }
+    } else if (action.hintType === 'color') {
+      if (
+        typeof action.hintValue !== 'number' ||
+        action.hintValue < 0 ||
+        action.hintValue > 4
+      ) {
+        return `Invalid hint: color hint must be 0-4, got ${action.hintValue}`;
+      }
     } else {
-      const hasMatch = targetHand.some((card) => {
-        if (action.hintType === 'color') {
-          return card.color === action.hintValue;
-        }
-        return card.value === action.hintValue;
-      });
+      const hasMatch = targetHand.some((card) => card.value === action.hintValue);
       if (!hasMatch) {
         return 'Invalid hint: no matching cards in target hand';
       }
@@ -188,11 +192,8 @@ export function getLegalActionsFromObservation(observation: Observation): Action
   }
   if (observation.hintsRemaining > 0) {
     const partnerSeat = 1 - selfSeat;
-    const targetHand = observation.visibleCards;
     for (const color of COLORS) {
-      if (targetHand.some((c) => c.color === color)) {
-        actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'color', hintValue: color });
-      }
+      actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'color', hintValue: color });
     }
     for (let value = 1; value <= 5; value++) {
       actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'number', hintValue: value });
@@ -215,11 +216,8 @@ export function getLegalActionsFromObservationNoDiscard(observation: Observation
   }
   if (observation.hintsRemaining > 0) {
     const partnerSeat = 1 - selfSeat;
-    const targetHand = observation.visibleCards;
     for (const color of COLORS) {
-      if (targetHand.some((c) => c.color === color)) {
-        actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'color', hintValue: color });
-      }
+      actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'color', hintValue: color });
     }
     for (let value = 1; value <= 5; value++) {
       actions.push({ type: 'hint', targetPlayer: partnerSeat, hintType: 'number', hintValue: value });
